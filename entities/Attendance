@@ -1,0 +1,50 @@
+{
+  "name": "Attendance",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "section_id": {
+      "type": "string"
+    },
+    "section_name": {
+      "type": "string"
+    },
+    "grade_level": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "present",
+        "absent",
+        "late",
+        "excused"
+      ],
+      "default": "present"
+    },
+    "school_year_id": {
+      "type": "string"
+    },
+    "month": {
+      "type": "string",
+      "description": "Month name for grouping"
+    },
+    "recorded_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "date",
+    "status"
+  ]
+}

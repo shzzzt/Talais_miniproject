@@ -1,0 +1,64 @@
+{
+  "name": "HealthRecord",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "grade_level": {
+      "type": "string"
+    },
+    "section_name": {
+      "type": "string"
+    },
+    "date_recorded": {
+      "type": "string",
+      "format": "date"
+    },
+    "height_cm": {
+      "type": "number",
+      "description": "Height in centimeters"
+    },
+    "weight_kg": {
+      "type": "number",
+      "description": "Weight in kilograms"
+    },
+    "bmi": {
+      "type": "number",
+      "description": "Auto-calculated BMI"
+    },
+    "bmi_category": {
+      "type": "string",
+      "enum": [
+        "Severely Wasted",
+        "Wasted",
+        "Normal",
+        "Overweight",
+        "Obese"
+      ],
+      "description": "BMI classification"
+    },
+    "feeding_program": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flagged for feeding program"
+    },
+    "school_year_id": {
+      "type": "string"
+    },
+    "age_years": {
+      "type": "number"
+    },
+    "remarks": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "height_cm",
+    "weight_kg"
+  ]
+}

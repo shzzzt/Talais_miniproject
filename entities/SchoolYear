@@ -1,0 +1,75 @@
+{
+  "name": "SchoolYear",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "School year label e.g. 2025-2026"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "active",
+        "completed",
+        "archived"
+      ],
+      "default": "planning"
+    },
+    "enrollment_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "enrollment_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "q1_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "q1_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "q2_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "q2_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "q3_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "q3_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "q4_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "q4_end": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

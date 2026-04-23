@@ -1,0 +1,46 @@
+{
+  "name": "Section",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Section name e.g. Rizal, Mabini"
+    },
+    "grade_level": {
+      "type": "string",
+      "enum": [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5",
+        "Grade 6",
+        "Grade 7",
+        "Grade 8",
+        "Grade 9",
+        "Grade 10"
+      ],
+      "description": "Grade level"
+    },
+    "school_year_id": {
+      "type": "string",
+      "description": "Reference to SchoolYear"
+    },
+    "adviser_email": {
+      "type": "string",
+      "description": "Email of the adviser teacher"
+    },
+    "adviser_name": {
+      "type": "string",
+      "description": "Name of the adviser"
+    },
+    "max_capacity": {
+      "type": "number",
+      "default": 50
+    }
+  },
+  "required": [
+    "name",
+    "grade_level"
+  ]
+}

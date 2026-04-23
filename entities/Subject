@@ -1,0 +1,42 @@
+{
+  "name": "Subject",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Subject name e.g. Filipino, Mathematics"
+    },
+    "code": {
+      "type": "string",
+      "description": "Subject code"
+    },
+    "grade_level": {
+      "type": "string",
+      "enum": [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5",
+        "Grade 6",
+        "Grade 7",
+        "Grade 8",
+        "Grade 9",
+        "Grade 10"
+      ]
+    },
+    "teacher_email": {
+      "type": "string"
+    },
+    "teacher_name": {
+      "type": "string"
+    },
+    "school_year_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "grade_level"
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "name": "Student",
+  "type": "object",
+  "properties": {
+    "lrn": {
+      "type": "string",
+      "description": "Learner Reference Number (12-digit)"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "middle_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "suffix": {
+      "type": "string",
+      "description": "e.g. Jr., III"
+    },
+    "birthday": {
+      "type": "string",
+      "format": "date"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "Male",
+        "Female"
+      ]
+    },
+    "address": {
+      "type": "string"
+    },
+    "contact_number": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "enrolled",
+        "transferred_in",
+        "transferred_out",
+        "dropped",
+        "graduated",
+        "alumni"
+      ],
+      "default": "enrolled"
+    },
+    "parent_name": {
+      "type": "string",
+      "description": "Parent/Guardian full name"
+    },
+    "parent_contact": {
+      "type": "string"
+    },
+    "parent_relationship": {
+      "type": "string",
+      "enum": [
+        "Mother",
+        "Father",
+        "Guardian"
+      ]
+    },
+    "parent_occupation": {
+      "type": "string"
+    },
+    "current_grade_level": {
+      "type": "string",
+      "enum": [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5",
+        "Grade 6",
+        "Grade 7",
+        "Grade 8",
+        "Grade 9",
+        "Grade 10"
+      ]
+    },
+    "current_section_id": {
+      "type": "string"
+    },
+    "current_section_name": {
+      "type": "string"
+    },
+    "school_year_id": {
+      "type": "string"
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "transfer_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "transfer_reason": {
+      "type": "string"
+    },
+    "remarks": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name",
+    "lrn"
+  ]
+}
