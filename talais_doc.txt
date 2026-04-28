@@ -1,0 +1,2931 @@
+
+
+
+
+
+
+
+
+TALAIS
+
+Web-Based Student Information System
+
+Musuan Integrated School
+
+Musuan, Maramag, Bukidnon
+
+
+
+
+Comprehensive Features List & Database Design Specification
+
+
+
+Prepared by:
+
+Oinal, Baby Lyn A.
+
+Tabianan, Ken F.
+
+Velasco, Shauntie O.
+
+BSIT 3C  |  ITSD 82 - Web Software Tools
+
+College of Computer Information Sciences and Computing
+
+Central Mindanao University  |  April 2026
+
+
+
+
+1. Project Overview
+
+TALAIS is a web-based Student Information System (SIS) developed specifically for Musuan Integrated School, a public elementary school located in Musuan, Maramag, Bukidnon. The school currently serves 34 teachers and 962 students across Kinder to Grade 6. At present, the school relies on DepEd's Learner Information System (LIS), which provides only minimal functionality, alongside manual and paper-based methods for the majority of its administrative and academic processes.
+
+
+
+This document consolidates the comprehensive features list and detailed database schema for TALAIS, derived from the following primary sources:
+
+
+Direct interviews with the school principal, Dr. Weenkie Jhon A. Marcelo, and faculty members (February 4, 2026)
+
+
+Audio-recorded interview transcript with school staff discussing enrollment, grading, attendance, and sectioning processes
+
+
+MIS Interview notes documenting digitalization requirements
+
+
+The TALAIS capstone manuscript (Chapter I–IV)
+
+
+ITSD 82 Mini Project Criteria Guide (BSIT 3C)
+
+
+
+The system is designed to address the following core problems identified at Musuan Integrated School:
+
+
+Enrollment is still entirely manual, requiring parents to fill out physical forms and submit birth certificates during Brigada Eskwela.
+
+
+Grading and form generation (Form 137, Form 138 / SF9, SF10) are done manually by hand, making retrieval and accuracy difficult.
+
+
+Attendance (SF2) is recorded manually in paper form without digital integration.
+
+
+Key Performance Indicators (KPIs) and NAT performance data are computed by hand every year, risking data loss.
+
+
+Student health data (BMI for feeding program) is tracked in Excel by teachers with no integrated system.
+
+
+Scheduling and class section assignment is coordinated informally among grade level chairs.
+
+
+There is no centralized platform for parents to monitor their child's grades, attendance, or school violations.
+
+
+Alumni and transfer student tracing is difficult; physical records deteriorate over time.
+
+
+
+
+2. System User Roles
+
+TALAIS implements Role-Based Access Control (RBAC) with three distinct user types, each with defined access scopes derived from the school's actual organizational structure. Student accounts are not included — as Musuan Integrated School is an elementary school, students are not expected to directly interact with the system. Student data is instead managed and monitored by their teachers, administrators, and parents/guardians.
+
+
+
+Role
+
+User
+
+Access Scope
+Admin/Registrar
+School Principal / Admin Staff
+Full system access: enrollment, faculty accounts, schedules, student records, reports, analytics, settings, audit logs. Can assign Grade Level Head tags.
+Faculty — Regular Teacher
+Teachers (Class Advisers & Subject Teachers)
+View personal info and own schedule, encode grades for assigned sections/subjects, manage class attendance, view student health data, view current and previous year grades of students they handle, record violations.
+Faculty — Grade Level Head
+Designated teacher or staff with Grade Level Head tag
+All regular teacher access PLUS: assign students to sections within their grade level, manage teacher assignments for their grade level, view all student records and grade history in their grade level, access scheduling for their grade level. Can be a non-teaching staff account in the future.
+Parent/Guardian
+Parents and Legal Guardians
+Monitor child's grades, attendance, schedule, violations, and certifications — current school year only. Read-only. No access to historical years or other students.
+
+
+
+
+3. Comprehensive Features List
+
+Features are organized by module. Each feature is tagged with its source (interview, manuscript, or mini-project criteria) and assigned a development priority.
+
+
+
+3.1 Enrollment Module
+
+Based on the audio interview and follow-up confirmation, enrollment at Musuan Integrated School takes place during Brigada Eskwela. The school arranges tables by grade level — from Kinder to Grade 6 — with an assigned adviser at each table. Parents approach the table for their child's target grade level and fill out the physical enrollment form there. Section assignment does NOT happen during this initial enrollment; all students are first registered under a grade level, and sections are divided afterward (once the qualifying exam results are available for cream class placement). Continuing students have existing LRNs from Kinder onward. The enrollment module digitizes this flow while preserving the grade-level-first, sectioning-later workflow.
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+New Student Registration
+Collect complete student information (name based on birth certificate, birthdate, address, gender, mother tongue, IP group, religion), parent/guardian details, and supporting documents. Validates LRN assignment via DepEd LIS.
+Interview + Manuscript
+High
+Continuing Student Re-enrollment
+Auto-populate existing student data using LRN lookup. Parent confirms or updates information only. No re-entry of birth certificate data needed since record already exists in the system.
+Audio Interview
+High
+Birth Certificate Verification
+Enforce that student names in the system match birth certificate spellings. Document upload field for digital copy of birth certificate.
+Audio Interview
+High
+Enrollment Form Digital Fill-out
+Admin/teacher encodes enrollment form data at the designated grade-level station. Mirrors the physical enrollment form provided by the school. Students are registered to a grade level first — section assignment comes later.
+Audio Interview (Confirmed)
+High
+Grade Level Assignment (First Step)
+Assign newly enrolled students to their appropriate grade level (Kinder to Grade 6) at the time of enrollment. Kinder entries include AM or PM session preference. Section assignment is a separate step done after enrollment period closes.
+Audio Interview (Confirmed)
+High
+Section Assignment (Post-Enrollment)
+After enrollment closes, grade level chairs or admin assign students to sections. System-assisted sectioning based on qualifying exam scores for cream class placement (85 and above threshold). Bulk transfer: admin can move ALL students in a pool to a section, or select specific students. Equal distribution of remaining students across regular sections. Admin can manually override. Section assignment is logged with history.
+Audio Interview + Adviser Comment
+High
+Student Transfer Between Sections
+Admin or grade level head can transfer a student from one section (and teacher/schedule) to another within the same school year. Transfer logs record: who initiated, date, from section, to section, and reason. Full history of all section transfers is accessible per student.
+Adviser Comment
+High
+Bulk Section Transfer
+Admin can transfer ALL students from a section/teacher to another section, or select specific students for transfer. Useful when restructuring sections mid-year. All individual transfers are logged automatically.
+Adviser Comment
+High
+LRN Auto-assignment
+For new Kinder entrants, the system interfaces with DepEd LIS to trigger LRN generation. Once assigned, LRN is stored permanently and carries through Grade 6 to Senior High School.
+Audio Interview + MIS Notes
+High
+Summer Class Tagging
+Admin or teacher can tag a student as having attended summer classes. This flag appears on the student profile and is factored into grade history and promotion tracking.
+Adviser Comment
+Medium
+Parent/Guardian Linking
+Link one or more children to a single parent account. Parents with multiple children in the school share one account. Captures parent count per school year for PTA purposes (School Form 1).
+MIS Notes
+High
+Enrollment Status Tracking
+Track enrollment status per student: Enrolled, Pending Documents, Withdrawn, Dropped. Show enrollment statistics per grade level.
+Mini-Project Criteria
+Medium
+Enrollment Period Configuration
+Admin sets enrollment open and close dates (typically June, closes in March). System prevents new enrollments outside the defined period unless overridden by admin.
+Audio Interview
+Medium
+Transfer-In Processing
+Accept transferring students at any grade level during any quarter. Collect transfer documents: card (Form 138), certificate of good moral character. Record the quarter of entry for grade computation purposes. Transfer-in students appear in the Transfer In/Out Report.
+Audio Interview + Adviser Comment
+High
+Transfer-Out Processing
+Admin initiates student release. System generates required clearance documents. If near exam period, admin can tag student to finish exams first before transfer is completed. Transfer-out students appear in the Transfer In/Out Report.
+Audio Interview + Adviser Comment
+High
+Transfer In/Out Report
+Dedicated report listing all students who transferred in or out during the school year or a specified period. Includes: student name, LRN, from/to school, date, quarter, and reason. Exportable to PDF and Excel.
+Adviser Comment
+High
+School Form 1 (SF1) — School Register
+Auto-generate SF1 per section per school year. Fields: LRN, complete name (Last, First, Middle), Sex, Birthdate, Age as of 1st Friday of June, Mother Tongue (Grade 1-3 only), IP/Ethnic Group, Religion, Address (House#/Street/Sitio/Purok, Barangay, Municipality, Province), Father's Name, Mother's Maiden Name, Guardian with relationship, Contact Number, Learning Modality, and Remarks (T/I, T/O, NLS dates). Totals M/F/Combined. Indicators: T/O, T/I, DRP, CCT, B/A, SNED, ACL with dates. Signed by adviser and school head.
+SF1.xls + SF1 Sample Files + MIS Notes
+High
+Enrollment Certification Generation
+Auto-generate a certification that the student is currently enrolled at Musuan Integrated School. Used for 4Ps, scholarship, and other government assistance requirements. System can also generate Good Moral Character certificates and other school-issued certifications as configured by admin.
+Audio Interview + Adviser Comment
+High
+Enrollment Report
+Generate enrollment summary per grade level and section, showing total students, gender breakdown, and age distribution.
+Mini-Project Criteria
+Medium
+
+
+
+
+
+3.2 Grading Module
+
+Currently teachers manually accomplish grade sheets and accomplish SF9 and SF10 by hand. The system automates grade computation from individual assessment scores following DepEd's grading guidelines, and auto-generates Form 137 (SF10) and Form 138 (SF9/Report Card).
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+Grade Encoding by Teacher
+Teachers encode scores per assessment component (Written Work, Performance Task, Quarterly Assessment) per subject per quarter. Mirrors ZipGrade-style input for quizzes and exams.
+Audio Interview + MIS Notes
+High
+Automatic Grade Computation
+System computes quarterly grade from weighted components per DepEd formula. Written Work: 25%, Performance Task: 45%, Quarterly Assessment: 30% for Grades 3-6. Different weights for lower grades as configured.
+MIS Notes + Manuscript
+High
+Final Grade Computation
+Automatically compute final grade from four quarterly grades as average. Apply passing/failing determination based on DepEd standards (75 passing mark).
+MIS Notes
+High
+Grade Sheet View
+Tabular view of all student grades per subject per section. Color-coded indicators for passing and failing students. Column-based sorting and search.
+Audio Interview
+High
+Teacher View of Previous School Year Grades
+Teachers can view grades of students from previous school years — not just the current year. This allows advisers and subject teachers to understand a student's academic history. Access is limited to records relevant to their current assignment or students they previously handled.
+Adviser Comment
+High
+Grade Level Chair — Access to Previous Year Records
+Grade level chairs can look back at previous school years' grade records for any student within their grade level. This supports continuity when accepting students from the previous grade and during the peer-validation process.
+Adviser Comment
+High
+Assign Teacher to Review Grades
+Admin or grade level head can formally assign a specific teacher to review and validate another teacher's grade records. The assigned reviewer can view, comment, and digitally sign off. This extends the school's existing cross-checking system (next grade level validates outgoing grade level) to allow flexible review assignments.
+Adviser Comment
+High
+Grade Validation / Cross-checking
+Implement the school's peer-checking system digitally: the next grade level's teachers validate and digitally sign off on the outgoing grade level's records before school year end. Prevents missing grade entries.
+Audio Interview
+High
+Grade Ranking — Within Section and Cross-Section
+Rank students by grade within their own section, and compare rankings across other sections of the same grade level. Lookup feature for identifying high honor students (e.g., top 10 per grade level, honor roll). Rankings are computed per quarter and for the final grade.
+Adviser Comment
+High
+High Honors Lookup
+Admin and grade level head can quickly look up students qualifying for With Highest Honors, With High Honors, and With Honors distinctions based on general averages per quarter and final grade. Used for awarding ceremonies.
+Adviser Comment
+High
+Form 138 / Report Card (SF9) Generation — Per Grade Level
+Auto-generate the student report card per quarter matching the school's actual grade-specific templates. Grade 1: GMRC, Reading & Literacy, Mathematics, Makabansa, Language. Grade 2: GMRC, Filipino, English, Mathematics, Makabansa. Grade 3: Filipino, English, Mathematics, Science, Makabansa, GMRC. Grades 4-5: Filipino, English, Mathematics, Science, Araling Panlipunan, EPP/TLE, MAPEH (Music & Arts, PE & Health), GMRC. Grade 6: Filipino, English, Mathematics, Science, Araling Panlipunan, EPP/TLE, MAPEH (Music, Arts, PE, Health), GMRC. Each subject shows Q1-Q4 grades and Final Grade. Includes General Average and grade descriptor (A/P/AP/D/B). Back side: Attendance (months Jun-May, school days, days present, days absent, times tardy), Homeroom Guidance Learner's Development Assessment (per quarter, competencies rated 0-4). Parent/Guardian signatures per quarter. School head signature (Dr. Weenkie Jhon A. Marcelo). Promotion remarks. Downloadable and printable as PDF.
+1-FINAL.xlsx, 2-FINAL.xlsx, 3-FINAL.xlsx, 4_and_5-FINAL.xlsx, 6-FINAL.xlsx, Front-Back.xlsx
+High
+Form 137 / Permanent Record (SF10) Generation
+Auto-generate the student permanent record (SF10/Form 137) showing cumulative grades from Grade 1 to Grade 6 with all personal and academic data. Essential for alumni who need this document.
+Audio Interview + MIS Notes
+High
+Quarterly Exam Results Analytics
+Dashboard displaying performance results and scores of every student per subject per quarter. Allows teachers and admin to immediately identify at-risk students and take corrective action.
+MIS Notes
+High
+Grade Locking by Term
+Grades for a quarter are locked once validated. Only admin can unlock for corrections, with audit trail.
+Mini-Project Criteria
+Medium
+Soft Delete and Grade History
+Grade changes maintain history with old value and new value for audit purposes.
+Mini-Project Criteria
+Medium
+
+
+
+
+
+3.3 Attendance Module
+
+Currently attendance is recorded manually in SF2 (daily AM and PM). The system provides digital attendance checking per class with automatic SF2 generation. Attendance data affects student grades when absences exceed 20% of school days per DepEd guidelines.
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+Daily Attendance Encoding
+Teacher checks attendance per class with AM and PM periods. 'Check all present' button with ability to uncheck absent students. Can mark: Present, Absent, Late, Excused.
+Audio Interview + MIS Notes
+High
+Attendance Calendar View
+Calendar visualization of individual student attendance per month and quarter. Color-coded: green (present), red (absent), yellow (late).
+Mini-Project Criteria
+Medium
+Absence Threshold Alert — Push to Teacher
+System automatically computes remaining allowed absences per student. When a student's remaining absences drop to a critical level (configurable threshold, e.g., 5 days left), the system sends an alarming notification directly to the class teacher/adviser — not just to admin. Teacher sees which specific students are approaching the 20% drop-out limit and how many absences they have left. This allows early intervention before the student reaches the drop-out threshold.
+Audio Interview + Adviser Comment
+High
+School Form 2 (SF2) — Daily Attendance per Class
+Auto-generate SF2 per section per month. Rows: student names (Male then Female, numbered separately). Columns: daily attendance across all school days of the month (M/T/W/TH/F per week), Total Absent, Total Present, and Remarks (if dropped, state reason). Bottom rows: Male total per day, Female total per day, Combined total per day. Footer: Month, Number of Days of Classes, summary (M/F/Total present, absent, tardy). Codes: blank=Present, x=Absent, T=Tardy. Signed by adviser.
+SF2.xls
+High
+School Form 3 (SF3) — Books Issued and Returned
+Generate SF3 per section tracking textbook issuance and return. Fields: student name, up to 10 subject areas with issued/returned dates per book. Totals for male, female, and all learners. Includes total copies per subject.
+SF3.xls
+Low
+School Form 4 (SF4) — Monthly Learner Movement and Attendance
+Auto-generate SF4 consolidated per grade level per month. Columns per section: Grade/Year Level, Section, Adviser Name, Registered Learners (M/F/T), Attendance Daily Average, Attendance % for Month, NLPA cumulative and monthly, Transferred Out (cumulative/monthly/end), Transferred In (cumulative/monthly/end). Submitted to principal monthly.
+SF4.xls + MIS Notes
+High
+School Form 5 (SF5) — Report on Promotions and Level of Proficiency
+Generate SF5 at end of school year per section. Columns: LRN, Learner Name, General Average, Action Taken (Promoted, Conditionally Promoted, Retained, Did Not Meet Expectations per failed subject). Summary table: status counts (M/F/T). Level of Progress table: Did Not Meet Expectations (74 and below), Fairly Satisfactory (75-79), Satisfactory (80-84), Very Satisfactory (85-89), Outstanding (90-100) — each with M/F/T count.
+SF5.xls
+High
+Attendance Impact on Grades
+System flags students at risk of being dropped out due to excessive absences (beyond 20%). Admin receives notification for action.
+Audio Interview
+High
+Attendance Export
+Export attendance records per class, per grade level, or school-wide to PDF and Excel.
+Mini-Project Criteria
+Medium
+
+
+
+
+
+3.4 Scheduling Module
+
+Scheduling is currently managed by grade level chairs who create class programs following DepEd-mandated subject hours. The system helps generate and manage class schedules per section and teacher. For larger school setups, the system supports tracing which teacher currently handles which sections and subjects.
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+Class Schedule Creation
+Admin or grade level head creates schedules per section following DepEd subject hour requirements (e.g., Filipino 45 min). Prevents scheduling conflicts for teachers handling multiple sections.
+Audio Interview
+High
+Teacher Assignment per Section
+Assign specific teachers to specific subjects and sections. For Grade 1-3 (mono/self-contained), one adviser handles all subjects. For Grade 4-6 (departmentalized), assign subject teachers per area of expertise.
+Audio Interview
+High
+Grade Level Head Tagging & Privileges
+Admin can tag any teacher (or future non-teaching staff account) as a Grade Level Head. Grade Level Heads have elevated privileges: they can create and assign sections, manage teacher assignments within their grade level, view all student records in their grade level, and access scheduling for their grade. This role is distinct from Master Teacher designation and can be assigned to any staff account.
+Adviser Comment
+High
+Teacher Current Assignment Tracing
+For schools with many teachers, admin and grade level heads can look up any teacher to immediately see their current section assignments, subjects handled, and schedule. The teacher's own account likewise shows their complete active schedule. Useful for large-school scenarios where tracking teacher assignments quickly matters.
+Adviser Comment
+High
+Section Management
+Create and manage sections per grade level. Support for cream class identification (Cream A, Cream B for high achievers, with regular sections for the rest). Tag sections as AM or PM for Kinder.
+Audio Interview
+High
+Teacher Rotation Tracking
+Record which teachers handled cream classes per school year to support the school's annual rotation policy ensuring fair distribution of cream class assignments.
+Audio Interview
+Medium
+Schedule View per Teacher
+Faculty dashboard shows personal schedule with assigned subjects, sections, rooms, and time slots for the current school year.
+Manuscript + Adviser Comment
+High
+Grade Level Chair Management
+Identify grade level chairs per grade. Record master teacher designations. Grade level chairs can manage scheduling for their grade level.
+Audio Interview
+Medium
+
+
+
+
+
+3.5 Student Health Module
+
+Before classes start, students are weighed and measured by teachers who currently use Excel for this. BMI is computed to identify students for the school feeding program.
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+Student Health Data Encoding
+Teachers encode student weight (kg), height (cm), and other health data (vision, medical conditions). Data is captured at the start of each school year.
+MIS Notes
+High
+Automatic BMI Computation
+System automatically computes BMI from height and weight. Classifies students as: Severely Wasted, Wasted, Normal, Overweight, Obese per DepEd-WHO standards.
+MIS Notes + Manuscript
+High
+Feeding Program List
+Auto-generate the list of students who qualify for the school feeding program (Severely Wasted and Wasted categories). Includes student name, grade, section, weight, height, BMI, and classification.
+MIS Notes
+High
+Health Data History
+Track changes in student health data over school years to monitor growth progress.
+Manuscript
+Medium
+Health Data Export
+Export health data and feeding program list to Excel and PDF for reporting.
+Mini-Project Criteria
+Medium
+
+
+
+
+
+3.6 Analytics & Reporting Module
+
+The school currently computes KPI data manually every year in a record book. NAT performance data is compiled by hand. The analytics module automates all these computations and provides visual dashboards.
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+PIR (Progress in Instruction) Report
+Generate the PIR monthly report per section and consolidated school-wide. Columns: Teacher/Adviser Name, January Enrollment (M/F/T), Transferred In June to present (M/F/T + Reason), Transferred Out June to present (M/F/T + Reason), Dropped Out (M/F/T + Reason), LARDO (M/F/T + Reason), Overage (M/F/T), IP Learners (M/F/T), 4Ps CTT Recipients (M/F/T), ALIVE Learners (M/F/T). Submitted to the district office.
+PIR_REPORT_MIS.xlsx
+High
+Key Performance Indicators (KPI) Dashboard
+Automated computation and display of annual KPIs for the school year (March-June cycle) following the school's specific formula. Metrics include promotion rates, dropout rates, completion rates, and other DepEd KPIs.
+MIS Notes + Audio Interview
+High
+NAT Performance Tracking — Import from DepEd
+Record and track National Achievement Test (NAT) results per subject per school year. Supports CSV and XLSX import directly from DepEd-provided files so teachers do not need to manually re-encode results. Compute mean percentage scores and year-on-year comparison charts. Prevents data loss since DepEd regularly requests this performance data.
+MIS Notes + Adviser Comment
+High
+Quarterly Exam Analytics
+Per-student and per-subject visualization of quarterly exam scores. Identify top performers and struggling students. Enables teachers to act early (as noted by the school: 'so that they can do about it as soon as possible').
+MIS Notes
+High
+Student Performance Dashboard
+School-wide performance visualization: grade distribution, pass/fail rates per subject per grade level. Comparison across quarters and school years.
+Manuscript + Mini-Project Criteria
+High
+Student Tracing Report
+Track and list alumni, transferred-out students, and dropout students. Auto-update from enrollment status changes. Fulfills DepEd's student tracing requirements.
+MIS Notes
+High
+Enrollment Statistics Report
+Enrollment counts per grade level, section, gender, and school year. Year-on-year enrollment trend charts.
+Mini-Project Criteria
+Medium
+Teacher Load Report
+View of teacher assignments: subjects handled, number of sections, number of students per teacher. Supports equitable workload distribution.
+Audio Interview
+Medium
+Custom Date Range Reports
+Admin can generate reports filtered by date range, school year, grade level, or section. Export to PDF and Excel.
+Mini-Project Criteria
+Medium
+
+
+
+
+
+3.7 Student Violations Module
+
+The school tracks student behavioral incidents. Violations are recorded on the student's profile and are visible to authorized parties. Parents can view their child's violations through the parent portal (read-only).
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+Violation Recording on Student Profile
+Faculty or admin records student violations directly on the student's profile page. Each violation entry includes: date, violation type, severity (Minor/Major), description of incident, and action taken. Violation history is cumulative across school years and always accessible on the student profile.
+Manuscript + Adviser Comment
+Medium
+Violation History per Student
+Cumulative list of recorded violations per student, visible on the student profile, spanning all school years. Accessible to admin, the student's current adviser, and grade level head.
+Manuscript + Adviser Comment
+Medium
+Parent Visibility of Violations
+Parents can view their child's recorded violations through their dedicated account (read-only). Parents see violations for the current school year only, consistent with the access limitations defined for the parent module.
+Manuscript + Adviser Comment
+Medium
+Violation Report
+Admin can generate violation summary reports per section, grade level, or school year.
+Mini-Project Criteria
+Low
+
+
+
+
+
+3.8 Parent/Guardian Module
+
+Parents currently receive information only through quarterly teacher-parent conferences and general assemblies at the start and end of the school year. The parent module provides real-time access to their child's current academic information. Parent accounts are strictly limited to viewing — no data entry or modification is allowed. Access is scoped to the current school year only; parents cannot browse historical records from previous years.
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+Parent Account Management
+Admin creates parent accounts linked to their child/children. One parent account can be linked to multiple students enrolled in the school.
+Manuscript
+High
+Child Academic Overview — Current Year Only
+Parent dashboard shows child's current quarter grades per subject, attendance summary, and any violations recorded in the current school year. Parents cannot access data from previous school years — this is intentionally restricted to protect historical records and maintain simplicity.
+Manuscript + Adviser Comment
+High
+Class Schedule View
+Parents can view their child's class schedule for the current school year (read-only).
+Manuscript
+Medium
+Enrollment Certification Access
+Parents can request and download their child's enrollment certification from the parent portal. Other school-issued documents (e.g., Good Moral Character certificates) may also be made available for download once generated by admin.
+Audio Interview + Adviser Comment
+High
+Notification on Report Card
+Parents receive an in-app notification when quarterly report cards are ready for viewing. Digital acknowledgment replaces the physical parent signature on the card per quarter.
+Audio Interview
+Medium
+SMS / Push Notification to Parents
+System sends SMS push notifications to parents for critical alerts: report card availability, alarming absence count of their child, and important school announcements. Uses SMS gateway integration (e.g., Semaphore or similar Philippine SMS provider).
+Adviser Comment
+Medium
+Parent Access Limitations Summary
+Parent accounts are strictly read-only and scoped to: (1) current school year data only, (2) their linked child/children only, (3) grades, attendance, schedule, violations, and certifications only. No access to other students, historical years, health records, or system settings.
+Adviser Comment
+High
+
+
+
+
+
+3.9 Admin / Registrar Module
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+User Account Management
+Create, edit, activate, deactivate faculty and parent accounts. Assign roles and permissions. Bulk import via Excel template. Note: student accounts are not created — students are elementary-age and do not directly access the system.
+Mini-Project Criteria
+High
+School Year Configuration
+Set active school year, enrollment period dates, grading quarter dates, and academic calendar. Archive previous school years.
+Mini-Project Criteria
+High
+School Settings
+Configure school name, logo, grade levels, sections, DepEd division/district. Customize grading formulas per grade level if school-specific.
+Mini-Project Criteria
+High
+Audit Log Viewer
+View complete audit trail of all system actions: login/logout, CRUD operations, grade changes, enrollment updates. Filterable by user, date, action type. Export to Excel/CSV.
+Mini-Project Criteria
+Medium
+Backup Management
+Manual and scheduled automated backups of database. Email notification on backup success or failure. 30-day retention display.
+Mini-Project Criteria
+Medium
+Document Template Management
+Admin uploads and manages official form templates (SF1, SF2, SF9, SF10, Form 137, Form 138) in the school's specific format as provided by the school administration.
+MIS Notes
+High
+
+
+
+
+
+3.10 Authentication & Security
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+Secure Login
+Email/username + password with bcrypt/Argon2 hashing. No MD5 or SHA1.
+Mini-Project Criteria + Manuscript
+High
+Two-Factor Authentication (2FA)
+OTP via email for enhanced security, especially for admin accounts. Effective against phishing attacks (found to reduce phishing by statistical significance per Watini et al., 2024).
+Manuscript (Info Security)
+High
+Account Lockout
+Temporary lock after 5 failed login attempts. Admin notified of repeated failed attempts.
+Mini-Project Criteria
+High
+Session Management
+Automatic session timeout after inactivity. Concurrent session handling.
+Mini-Project Criteria
+High
+Password Policy
+Minimum 8 characters with uppercase, lowercase, number, and special character requirement.
+Mini-Project Criteria
+High
+RBAC Enforcement
+All routes and API endpoints enforce role-based access. Users cannot access modules outside their role.
+Manuscript + Mini-Project Criteria
+High
+SQL Injection & XSS Prevention
+Parameterized queries via Laravel ORM. Output encoding and Content Security Policy headers.
+Mini-Project Criteria
+High
+CSRF Protection
+CSRF tokens on all state-changing forms.
+Mini-Project Criteria
+High
+Password Reset
+Secure token-based password reset via email.
+Mini-Project Criteria
+Medium
+
+
+
+
+
+3.11 Notifications & Alerts
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+In-App Notifications
+Real-time notification bell with unread count badge. System-generated alerts for grade encoding deadlines, attendance warnings, and enrollment updates.
+Mini-Project Criteria
+Medium
+Email Notifications via Gmail SMTP
+Email alerts for: report card availability, excessive absences, failed login attempts, backup status. Uses Gmail SMTP with STARTTLS encryption for secure mail transfer.
+Mini-Project Criteria + MIS Notes
+Medium
+SMS / Push Notifications to Parents
+System sends SMS push notifications to parents for: report card availability, alarming student absence count, and school announcements. Integrates with a Philippine SMS gateway (e.g., Semaphore, Vonage, or similar). Phone number stored on parent profile.
+Adviser Comment
+Medium
+Absence Alarm Notification to Teacher
+When a student's remaining allowed absences fall below the critical threshold, system sends an immediate alarming notification to the class teacher/adviser — in-app and optionally via email. Teacher can see the list of students at risk with absences remaining.
+Adviser Comment
+High
+Grade Submission Reminder
+Notify teachers of upcoming grade submission deadlines per quarter.
+Mini-Project Criteria
+Medium
+
+
+
+
+
+3.11b Student Profile
+
+The student profile serves as the central record for each student, accessible by admin, teachers, and grade level heads. It consolidates all information about a student across their entire enrollment history at Musuan Integrated School.
+
+
+
+Feature
+
+Description
+
+Source
+
+Priority
+Comprehensive Student Profile Page
+Single unified profile page per student showing: personal info (name, LRN, birthdate, address, parents/guardian, contact), enrollment history (all school years, grade levels, sections, status), academic records (grades per year), attendance history, health records (BMI history), violations record, and certifications issued.
+Adviser Comment
+High
+Teacher View: Current Year + Limited History
+Teachers can view a student's records for the current school year. They can also view grades from previous school years for students they currently handle. Access to previous year records is based on current assignment — a teacher cannot browse all historical records for students not in their class.
+Adviser Comment
+High
+Grade Level Head: Full History Access
+Grade level heads can view complete historical records for any student within their grade level — all school years, all grades, all sections, transfers, violations, and health data. This supports continuity and decision-making.
+Adviser Comment
+High
+Admin: Full Profile Access
+Admin has unrestricted access to all student profiles across all grade levels and all school years.
+Manuscript
+High
+Summer Class Indicator on Profile
+A visible flag or badge on the student profile indicating that the student attended summer classes. Appears in the enrollment/grade history section and is considered in promotion tracking.
+Adviser Comment
+Medium
+Violation Record on Student Profile
+Violations are displayed directly on the student profile page as a chronological log. Teachers recording violations do so from the student profile. Admin and grade level heads can view the full violation history.
+Adviser Comment
+Medium
+Student Transfer History on Profile
+Profile shows a complete transfer history: all section transfers within school years, transfers in from other schools, and transfers out — each with date, reason, and who processed it.
+Adviser Comment
+High
+
+
+
+
+
+
+3.12 School Forms Reference
+
+All school forms used by Musuan Integrated School have been reviewed from the actual files provided. The following table summarizes each form, its purpose, the data it requires from TALAIS, and which module generates it.
+
+
+
+Form
+
+Full Name
+
+Key Data Fields
+
+Generated By Module
+
+Output Format
+SF1
+School Register
+LRN, Full Name, Sex, Birthdate, Age (as of 1st Friday June), Mother Tongue (Gr1-3), IP/Ethnic Group, Religion, Address (Street, Barangay, Municipality, Province), Father's Name, Mother's Maiden Name, Guardian + Relationship, Contact Number, Learning Modality, Remarks (T/I, T/O, NLS dates). Totals M/F/Combined. Indicators: T/O, T/I, DRP, CCT, B/A, SNED, ACL with dates.
+Enrollment Module
+PDF / Printable (per section)
+SF2
+Daily Attendance per Class
+Student names (M then F, numbered separately), daily attendance grid per school day of month (blank=Present, x=Absent, T=Tardy), Total Absent, Total Present, Remarks. Per-day totals: Male, Female, Combined. Footer: Month, No. of Days of Classes, Summary (M/F/T present/absent/tardy).
+Attendance Module
+PDF / Printable (per section per month)
+SF3
+Books Issued and Returned
+Student name, up to 10 subject areas with Issued Date and Returned Date per book. Totals: copies issued/returned by Male, Female, all learners per subject.
+Admin Module
+PDF / Printable (per section)
+SF4
+Monthly Learner Movement & Attendance
+Per section per month: Grade Level, Section, Adviser Name, Registered Learners (M/F/T), Attendance Daily Average, Attendance % for Month, NLPA (cumulative previous, for month, cumulative end), Transferred Out (cumulative prev, for month, cumul. end), Transferred In (same). Consolidated per grade level ? submitted to principal.
+Attendance + Enrollment Modules
+PDF / Printable (consolidated per grade)
+SF5
+Report on Promotions and Level of Proficiency
+LRN, Learner Name, General Average, Action Taken (Promoted / Conditionally Promoted / Retained / Did Not Meet Expectations — with failed subject noted). Summary Table: Promoted/Conditionally Promoted/Retained counts (M/F/T). Level of Progress table: Did Not Meet Expectations (=74), Fairly Satisfactory (75-79), Satisfactory (80-84), Very Satisfactory (85-89), Outstanding (90-100) — each with M/F/T.
+Grading + Analytics Modules
+PDF / Printable (per section, end of year)
+Form 138 (SF9)
+Report Card (per grade level)
+Front side: subjects per grade level with Q1/Q2/Q3/Q4 and Final Grade columns, General Average, grade descriptor legend (A/P/AP/D/B). Grade 1: GMRC, Reading & Literacy, Math, Makabansa, Language. Grade 2: adds Filipino/English. Grade 3: adds Science. Gr4-5: adds Araling Panlipunan, EPP/TLE, MAPEH (Music & Arts, PE & Health). Grade 6: MAPEH split into Music/Arts/PE/Health. Homeroom Guidance competencies (rated 0-4 per quarter). Back side: Attendance table (Jun-May: school days, days present, absent, tardy). Parent/Guardian signatures per quarter. Adviser signature, School Head (Dr. Weenkie Jhon A. Marcelo). Promotion/admission remarks.
+Grading + Attendance Modules
+PDF / Printable (per student per quarter)
+Form 137 (SF10)
+Permanent Record
+Student personal info (LRN, name, sex, birthdate, address, parents). Cumulative grades from Grade 1 through Grade 6, all subjects per year. Attendance summary per school year. Final status each year (promoted/retained/transferred). Used by alumni, transferring students, and for official record requests.
+Grading Module
+PDF / Printable / Downloadable (per student)
+PIR Report
+Progress in Instruction Report
+Per adviser/teacher row: January Enrollment (M/F/T), Transferred In June-to-present (M/F/T + Reason), Transferred Out (M/F/T + Reason), Dropped Out (M/F/T + Reason), LARDO (M/F/T + Reason), Overage (M/F/T), IP Learners (M/F/T), 4Ps/CTT Recipients (M/F/T), ALIVE Learners (M/F/T). Submitted to district office.
+Analytics + Enrollment Modules
+PDF + Excel (school-wide monthly)
+
+
+
+
+4. Database Design
+
+The following section presents the complete relational database schema for TALAIS. The database uses MySQL integrated with the Laravel framework. Each table is documented with column names, data types, constraints, and descriptions. All tables include soft-delete support (deleted_at) for data recovery and audit compliance.
+
+
+
+
+
+4.1 users
+
+Central authentication table for all system users regardless of role.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+name
+VARCHAR(150)
+
+Full legal name of the user
+email
+VARCHAR(191)
+UNIQUE
+Unique email address used for login and notifications
+password
+VARCHAR(255)
+
+bcrypt/Argon2 hashed password
+role
+ENUM
+
+Values: admin, faculty, parent — student accounts are not created in TALAIS
+is_grade_level_head
+TINYINT(1)
+
+Flag for faculty users tagged as Grade Level Head. Grants elevated privileges: section assignment, teacher management within grade level, full grade history access.
+phone_number
+VARCHAR(20)
+
+Mobile number for SMS push notifications (parents and faculty). Used by SMS gateway integration.
+status
+ENUM
+
+Values: active, inactive, suspended
+avatar
+VARCHAR(255)
+
+File path to uploaded profile avatar
+two_factor_secret
+VARCHAR(255)
+
+OTP secret for 2FA via email
+two_factor_enabled
+TINYINT(1)
+
+Flag whether 2FA is enabled for the account
+email_verified_at
+TIMESTAMP
+
+Timestamp of email verification
+remember_token
+VARCHAR(100)
+
+Token for persistent 'remember me' sessions
+last_login_at
+TIMESTAMP
+
+Timestamp of the last successful login
+last_login_ip
+VARCHAR(45)
+
+IP address of last login (supports IPv6)
+failed_login_count
+TINYINT
+
+Counter for consecutive failed login attempts; resets on success
+locked_until
+TIMESTAMP
+
+Timestamp until which account is locked; NULL if not locked
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+deleted_at
+TIMESTAMP
+
+Soft delete timestamp; NULL if not deleted
+
+
+
+
+
+4.2 school_years
+
+Defines academic calendar periods. All records are scoped to a school year.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+label
+VARCHAR(20)
+UNIQUE
+School year label, e.g., '2025-2026'
+start_date
+DATE
+
+First day of the school year (typically June)
+end_date
+DATE
+
+Last day of the school year (typically March)
+enrollment_start
+DATE
+
+Date when enrollment opens during Brigada Eskwela
+enrollment_end
+DATE
+
+Date when enrollment closes
+is_active
+TINYINT(1)
+
+Only one school year is active at a time
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.3 grade_levels
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+TINYINT UNSIGNED
+PK
+Primary key
+name
+VARCHAR(30)
+UNIQUE
+Grade level name: Kinder, Grade 1, Grade 2 ... Grade 6
+level_order
+TINYINT
+
+Numeric ordering: 0=Kinder, 1=Grade1, ... 6=Grade6
+is_departmentalized
+TINYINT(1)
+
+Flag for departmentalization (true for Grade 4, 5, 6)
+has_session
+TINYINT(1)
+
+True for Kinder (has AM/PM sessions)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.4 sections
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+grade_level_id
+TINYINT UNSIGNED
+FK
+References grade_levels.id
+name
+VARCHAR(50)
+
+Section name, e.g., 'Cream A', 'Section 1', 'Section 2'
+type
+ENUM
+
+Values: cream, regular. Cream sections are for top achievers.
+session
+ENUM
+
+Values: AM, PM, whole_day. Used for Kinder sections.
+adviser_id
+BIGINT UNSIGNED
+FK
+References users.id (teacher assigned as class adviser)
+max_capacity
+TINYINT
+
+Maximum allowed students per section (typically 30-50)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+deleted_at
+TIMESTAMP
+
+Soft delete timestamp
+
+
+
+
+
+4.5 students
+
+Profile and academic data for all students. Students do not have login accounts — their records are managed by admin and faculty, and viewed by parents through the parent module. The user_id field is therefore absent from this table.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+lrn
+VARCHAR(12)
+UNIQUE
+Learner Reference Number assigned by DepEd LIS (12-digit numeric)
+first_name
+VARCHAR(80)
+
+Student first name as it appears on birth certificate
+middle_name
+VARCHAR(80)
+
+Student middle name as it appears on birth certificate
+last_name
+VARCHAR(80)
+
+Student last name as it appears on birth certificate
+suffix
+VARCHAR(10)
+
+Name suffix (Jr., III, etc.)
+birth_date
+DATE
+
+Date of birth from birth certificate (stored as MM-DD-YYYY per SF1 format)
+gender
+ENUM
+
+Values: Male, Female (M/F as shown in SF1)
+birth_place
+VARCHAR(150)
+
+Place of birth as stated in birth certificate
+mother_tongue
+VARCHAR(80)
+
+Mother tongue language (e.g., Cebuano/Sinugbuanong Binisay, Higaonon, Manobo Matigsalug, Hiligaynon, English). Required for Grade 1-3 per SF1.
+ip_ethnic_group
+VARCHAR(80)
+
+Indigenous People ethnic group affiliation (e.g., Higaonon, Manobo Matigsalug). NULL if not IP.
+religion
+VARCHAR(80)
+
+Student's religion (e.g., Christianity, Indigenous Religion)
+house_street_sitio
+VARCHAR(150)
+
+House number, street, sitio, or purok — first address line per SF1
+barangay
+VARCHAR(80)
+
+Barangay of residence
+municipality_city
+VARCHAR(80)
+
+Municipality or city of residence (e.g., Maramag, City of Valencia)
+province
+VARCHAR(80)
+
+Province of residence (e.g., Bukidnon)
+birth_certificate_path
+VARCHAR(255)
+
+File path to uploaded birth certificate copy
+status
+ENUM
+
+Values: enrolled, transferred_out, dropped, completed, alumni
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+deleted_at
+TIMESTAMP
+
+Soft delete timestamp
+
+
+
+
+
+4.6 parents
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+user_id
+BIGINT UNSIGNED
+FK
+References users.id for parent login account
+first_name
+VARCHAR(80)
+
+Parent/guardian first name
+middle_name
+VARCHAR(80)
+
+Parent/guardian middle name
+last_name
+VARCHAR(80)
+
+Parent/guardian last name
+relationship
+ENUM
+
+Values: Father, Mother, Legal Guardian, Other
+contact_number
+VARCHAR(20)
+
+Mobile/landline contact number
+email
+VARCHAR(191)
+
+Email address for notifications
+address
+TEXT
+
+Home address
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.7 student_parents
+
+Junction table linking students to their parent/guardian accounts. Supports one parent with multiple children.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+student_id
+BIGINT UNSIGNED
+FK
+References students.id
+parent_id
+BIGINT UNSIGNED
+FK
+References parents.id
+is_primary
+TINYINT(1)
+
+Flag for primary contact (1 = primary guardian)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+
+
+
+
+
+4.8 enrollments
+
+Records each student's enrollment per school year, including section assignment and enrollment status.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+student_id
+BIGINT UNSIGNED
+FK
+References students.id
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+grade_level_id
+TINYINT UNSIGNED
+FK
+References grade_levels.id
+section_id
+BIGINT UNSIGNED
+FK
+References sections.id
+enrollment_date
+DATE
+
+Date when the student was formally enrolled
+enrollment_type
+ENUM
+
+Values: new, continuing, transfer_in
+status
+ENUM
+
+Values: enrolled, dropped, transferred_out, completed, pending
+transfer_date
+DATE
+
+Date of transfer if status is transferred_out
+transfer_destination
+VARCHAR(200)
+
+School name where student transferred to
+transfer_quarter
+TINYINT
+
+Quarter in which transfer occurred (1-4)
+learning_modality
+ENUM
+
+Values: Face to Face, Modular (print), Blended, Online. Captured per enrollment year as seen in SF1.
+is_summer_class
+TINYINT(1)
+
+Flag indicating the student attended summer classes during this school year. Appears on student profile and is factored in promotion tracking.
+qualifying_score
+DECIMAL(5,2)
+
+Score from qualifying exam used for cream class placement
+enrolled_by
+BIGINT UNSIGNED
+FK
+References users.id (teacher/admin who processed enrollment)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.9 faculty
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+user_id
+BIGINT UNSIGNED
+FK
+References users.id
+employee_id
+VARCHAR(30)
+UNIQUE
+DepEd employee ID number
+first_name
+VARCHAR(80)
+
+Teacher first name
+middle_name
+VARCHAR(80)
+
+Teacher middle name
+last_name
+VARCHAR(80)
+
+Teacher last name
+position
+ENUM
+
+Values: teacher_1, teacher_2, teacher_3, master_teacher_1, master_teacher_2
+specialization
+VARCHAR(100)
+
+Subject area expertise for departmentalized teaching (e.g., Science, Math)
+is_grade_level_chair
+TINYINT(1)
+
+Flag if teacher is currently designated as grade level chair (administrative position)
+grade_level_chair_of
+TINYINT UNSIGNED
+FK
+References grade_levels.id if is_grade_level_chair is true
+is_grade_level_head
+TINYINT(1)
+
+Flag if this faculty/staff member is tagged as Grade Level Head with elevated privileges (section assignment, full grade history access within their grade level)
+grade_level_head_of
+TINYINT UNSIGNED
+FK
+References grade_levels.id if is_grade_level_head is true
+contact_number
+VARCHAR(20)
+
+Teacher contact number
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+deleted_at
+TIMESTAMP
+
+Soft delete timestamp
+
+
+
+
+
+4.10 subjects
+
+Master list of subjects. The actual subjects per grade level differ and are based on the DepEd K-12 curriculum as confirmed from the actual Form 138 files. Grade 1: GMRC, Reading & Literacy, Mathematics, Makabansa, Language. Grade 2: GMRC, Filipino, English, Mathematics, Makabansa. Grade 3: Filipino, English, Mathematics, Science, Makabansa, GMRC. Grades 4-5: Filipino, English, Mathematics, Science, Araling Panlipunan, EPP/TLE, MAPEH, Music & Arts, PE & Health, GMRC. Grade 6: Filipino, English, Mathematics, Science, Araling Panlipunan, EPP/TLE, MAPEH, Music, Arts, PE, Health, GMRC.
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+name
+VARCHAR(100)
+
+Subject name (e.g., Filipino, English, Mathematics, Science, Araling Panlipunan, GMRC, TLE, EPP, Music, Arts, PE)
+code
+VARCHAR(20)
+UNIQUE
+Short subject code (e.g., FIL, ENG, MATH)
+minutes_per_day
+SMALLINT
+
+Mandated minutes per school day (e.g., Filipino = 45 min) per DepEd curriculum guide
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.11 grade_level_subjects
+
+Defines which subjects are offered per grade level.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+grade_level_id
+TINYINT UNSIGNED
+FK
+References grade_levels.id
+subject_id
+BIGINT UNSIGNED
+FK
+References subjects.id
+written_work_weight
+DECIMAL(5,2)
+
+Weight for Written Work component in grade computation (%)
+performance_task_weight
+DECIMAL(5,2)
+
+Weight for Performance Task component (%)
+quarterly_assessment_weight
+DECIMAL(5,2)
+
+Weight for Quarterly Assessment (exam) component (%)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.12 class_schedules
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+section_id
+BIGINT UNSIGNED
+FK
+References sections.id
+subject_id
+BIGINT UNSIGNED
+FK
+References subjects.id
+faculty_id
+BIGINT UNSIGNED
+FK
+References faculty.id (teacher handling this subject-section)
+day_of_week
+TINYINT
+
+1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday
+time_start
+TIME
+
+Class start time
+time_end
+TIME
+
+Class end time
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.13 quarters
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+TINYINT UNSIGNED
+PK
+Primary key (1-4)
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+name
+VARCHAR(20)
+
+Quarter name: 1st Quarter, 2nd Quarter, 3rd Quarter, 4th Quarter
+start_date
+DATE
+
+First day of the grading quarter
+end_date
+DATE
+
+Last day of the grading quarter
+is_grading_open
+TINYINT(1)
+
+Flag if grade encoding is currently allowed
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.14 assessment_components
+
+Individual score entries per student per subject per component per quarter. Raw data from which quarterly grades are computed.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+enrollment_id
+BIGINT UNSIGNED
+FK
+References enrollments.id (links to specific student-section-school_year)
+subject_id
+BIGINT UNSIGNED
+FK
+References subjects.id
+quarter_id
+TINYINT UNSIGNED
+FK
+References quarters.id
+component_type
+ENUM
+
+Values: written_work, performance_task, quarterly_assessment
+item_number
+TINYINT
+
+Assessment item sequence number within the component (e.g., WW1, WW2)
+score
+DECIMAL(6,2)
+
+Raw score earned by the student
+highest_possible_score
+DECIMAL(6,2)
+
+Maximum possible score for this assessment item
+encoded_by
+BIGINT UNSIGNED
+FK
+References users.id (teacher who encoded the score)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.15 student_grades
+
+Computed quarterly and final grades per student per subject, derived from assessment_components.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+enrollment_id
+BIGINT UNSIGNED
+FK
+References enrollments.id
+subject_id
+BIGINT UNSIGNED
+FK
+References subjects.id
+quarter_id
+TINYINT UNSIGNED
+FK
+References quarters.id (NULL for final grade)
+written_work_ps
+DECIMAL(5,2)
+
+Written Work percentage score
+performance_task_ps
+DECIMAL(5,2)
+
+Performance Task percentage score
+quarterly_assessment_ps
+DECIMAL(5,2)
+
+Quarterly Assessment percentage score
+quarterly_grade
+DECIMAL(5,2)
+
+Computed quarterly grade (weighted sum of the three components)
+final_grade
+DECIMAL(5,2)
+
+Average of four quarterly grades (populated at end of school year)
+remarks
+ENUM
+
+Values: Passed, Failed, Dropped — auto-set based on final grade and attendance
+is_locked
+TINYINT(1)
+
+Grade lock flag; once locked, requires admin override to change
+validated_by
+BIGINT UNSIGNED
+FK
+References users.id of the teacher from the next grade level who validated
+validated_at
+TIMESTAMP
+
+Timestamp of grade validation
+encoded_by
+BIGINT UNSIGNED
+FK
+References users.id (teacher who last modified)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.16 attendance_records
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+enrollment_id
+BIGINT UNSIGNED
+FK
+References enrollments.id
+date
+DATE
+
+Date of attendance record
+am_status
+ENUM
+
+Values: present, absent, late, excused — AM session attendance
+pm_status
+ENUM
+
+Values: present, absent, late, excused — PM session attendance
+recorded_by
+BIGINT UNSIGNED
+FK
+References users.id (teacher who took attendance)
+remarks
+VARCHAR(255)
+
+Optional remarks (e.g., reason for excused absence)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.17 student_health_records
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+student_id
+BIGINT UNSIGNED
+FK
+References students.id
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+measurement_date
+DATE
+
+Date of health measurement (typically at start of school year)
+weight_kg
+DECIMAL(5,2)
+
+Student weight in kilograms
+height_cm
+DECIMAL(5,2)
+
+Student height in centimeters
+bmi
+DECIMAL(5,2)
+
+Computed BMI (weight_kg / (height_m^2)); auto-calculated
+bmi_classification
+ENUM
+
+Values: severely_wasted, wasted, normal, overweight, obese — per DepEd-WHO standards
+is_feeding_program
+TINYINT(1)
+
+True if student qualifies for school feeding program (severely_wasted or wasted)
+other_notes
+TEXT
+
+Medical notes, conditions, or other health observations
+recorded_by
+BIGINT UNSIGNED
+FK
+References users.id (teacher who recorded)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.18 student_violations
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+student_id
+BIGINT UNSIGNED
+FK
+References students.id
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+date_of_incident
+DATE
+
+Date when the violation occurred
+violation_type
+VARCHAR(100)
+
+Category of violation (e.g., tardiness, misconduct, uniform violation)
+severity
+ENUM
+
+Values: minor, major
+description
+TEXT
+
+Detailed description of the incident
+action_taken
+TEXT
+
+Disciplinary action applied (e.g., verbal warning, call to parent)
+recorded_by
+BIGINT UNSIGNED
+FK
+References users.id (teacher or admin who recorded)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+deleted_at
+TIMESTAMP
+
+Soft delete timestamp
+
+
+
+
+
+4.19 nat_results
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+subject_id
+BIGINT UNSIGNED
+FK
+References subjects.id
+grade_level_id
+TINYINT UNSIGNED
+FK
+References grade_levels.id (NAT is typically for Grade 6)
+mean_percentage_score
+DECIMAL(5,2)
+
+Mean Percentage Score (MPS) for the subject in this school year
+number_of_takers
+SMALLINT
+
+Number of students who took the NAT
+proficiency_level
+VARCHAR(50)
+
+DepEd proficiency classification (e.g., Beginning, Developing, Approaching Proficiency)
+remarks
+TEXT
+
+Additional notes on NAT performance
+recorded_by
+BIGINT UNSIGNED
+FK
+References users.id (admin who recorded NAT data)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.20 key_performance_indicators
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+indicator_name
+VARCHAR(100)
+
+KPI name (e.g., Cohort Survival Rate, Drop-out Rate, Completion Rate, Promotion Rate)
+value
+DECIMAL(8,4)
+
+Computed KPI value (percentage or ratio)
+formula_used
+TEXT
+
+Description or reference to the formula used for computation
+grade_level_id
+TINYINT UNSIGNED
+FK
+References grade_levels.id if KPI is per grade level; NULL for school-wide KPI
+computed_at
+TIMESTAMP
+
+Timestamp when KPI was computed
+computed_by
+BIGINT UNSIGNED
+FK
+References users.id (admin who triggered computation)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.21 audit_logs
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+user_id
+BIGINT UNSIGNED
+FK
+References users.id (NULL if unauthenticated)
+action
+VARCHAR(50)
+
+Action performed: login, logout, create, update, delete, export, import, view
+model_type
+VARCHAR(100)
+
+Laravel model class name affected (e.g., App\Models\Student)
+model_id
+BIGINT UNSIGNED
+
+ID of the affected record
+old_values
+JSON
+
+JSON snapshot of values before the change (NULL for create actions)
+new_values
+JSON
+
+JSON snapshot of values after the change (NULL for delete actions)
+ip_address
+VARCHAR(45)
+
+Client IP address at time of action
+user_agent
+VARCHAR(255)
+
+Browser/device user agent string
+url
+VARCHAR(500)
+
+URL of the page or API endpoint where action occurred
+created_at
+TIMESTAMP
+
+Timestamp of the log entry
+
+
+
+
+
+4.22 notifications
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+CHAR(36)
+PK
+UUID primary key (Laravel notification standard)
+type
+VARCHAR(255)
+
+Notification class type identifier
+notifiable_type
+VARCHAR(255)
+
+Model type of the recipient (App\Models\User)
+notifiable_id
+BIGINT UNSIGNED
+
+ID of the recipient user
+data
+JSON
+
+JSON payload containing notification message, link, and metadata
+read_at
+TIMESTAMP
+
+Timestamp when notification was read; NULL if unread
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+
+
+4.23 grade_review_assignments
+
+Tracks formal assignments where a teacher is designated to review another teacher's grade records. Extends the school's existing peer-validation system to support flexible review assignments beyond just 'next grade level validates outgoing grade level'.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+assigned_by
+BIGINT UNSIGNED
+FK
+References users.id (admin or grade level head who created the assignment)
+reviewer_faculty_id
+BIGINT UNSIGNED
+FK
+References faculty.id (teacher assigned to review)
+reviewee_faculty_id
+BIGINT UNSIGNED
+FK
+References faculty.id (teacher whose grades are being reviewed)
+section_id
+BIGINT UNSIGNED
+FK
+References sections.id (specific section to review; NULL means all sections of the reviewee)
+quarter_id
+TINYINT UNSIGNED
+FK
+References quarters.id (quarter to review; NULL means all quarters)
+status
+ENUM
+
+Values: pending, in_review, completed
+reviewed_at
+TIMESTAMP
+
+Timestamp when reviewer completed and signed off
+remarks
+TEXT
+
+Reviewer's notes or findings during the review
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.24 homeroom_guidance_assessments
+
+Stores the Homeroom Guidance Learner's Development Assessment per student per quarter. This appears on the back of the Form 138 (Report Card) and rates student competencies on a 0–4 scale across all four quarters.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+enrollment_id
+BIGINT UNSIGNED
+FK
+References enrollments.id (links student to school year and section)
+quarter_id
+TINYINT UNSIGNED
+FK
+References quarters.id (1st, 2nd, 3rd, or 4th Quarter)
+competency
+VARCHAR(200)
+
+Competency statement being rated (e.g., 'Value oneself', 'Value others', 'Respect Individual differences', 'Gain understanding of oneself and others', 'Identify methods of effective study habits', 'Demonstrate effective study habit')
+rating
+TINYINT
+
+Rating 0–4: 4=Developed and Commendable, 3=Sufficiently Developed, 2=Developing, 1=Needs Improvement, 0=No Chance to Observe
+encoded_by
+BIGINT UNSIGNED
+FK
+References users.id (adviser who rated the competency)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.25 transfer_records
+
+Detailed record of each student transfer in or out event. Supplements the status field in enrollments and enables the student tracing report, PIR report (T/I and T/O columns), and SF1 Remarks column (T/I DATE, T/O DATE).
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+student_id
+BIGINT UNSIGNED
+FK
+References students.id
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+transfer_type
+ENUM
+
+Values: transfer_in (from external school), transfer_out (to external school), dropout, new_learner_student (NLS), section_transfer (internal — moved from one section to another within the same school)
+transfer_date
+DATE
+
+Official date of transfer event (used in SF1 Remarks: T/I DATE, T/O DATE, NLS DATE)
+quarter_at_transfer
+TINYINT
+
+Quarter number during which the transfer occurred (1–4)
+from_section_id
+BIGINT UNSIGNED
+FK
+References sections.id — original section (used for section_transfer type)
+to_section_id
+BIGINT UNSIGNED
+FK
+References sections.id — destination section (used for section_transfer type)
+from_school
+VARCHAR(200)
+
+Previous school name (for transfer_in students)
+to_school
+VARCHAR(200)
+
+Destination school name (for transfer_out students)
+reason
+TEXT
+
+Reason for transfer or dropout — appears in PIR report Reason column
+documents_received
+JSON
+
+JSON list of documents received: card (Form 138), good moral certificate, birth certificate, etc.
+processed_by
+BIGINT UNSIGNED
+FK
+References users.id (admin who processed the transfer)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.26 sf3_book_records
+
+Tracks textbook issuance and return per student per subject, used to generate School Form 3 (SF3). Currently not digitized at Musuan Integrated School; this table prepares the system to support it.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+enrollment_id
+BIGINT UNSIGNED
+FK
+References enrollments.id
+subject_id
+BIGINT UNSIGNED
+FK
+References subjects.id
+book_title
+VARCHAR(200)
+
+Title and subject area of the textbook issued
+issued_date
+DATE
+
+Date the book was issued to the student
+returned_date
+DATE
+
+Date the book was returned; NULL if not yet returned
+condition_on_issue
+ENUM
+
+Values: new, good, fair, poor — condition of book when issued
+condition_on_return
+ENUM
+
+Values: good, fair, poor, lost — condition when returned
+remarks
+VARCHAR(255)
+
+Action taken if lost or damaged (per SF3 guidelines)
+recorded_by
+BIGINT UNSIGNED
+FK
+References users.id (teacher who recorded)
+created_at
+TIMESTAMP
+
+Record creation timestamp
+updated_at
+TIMESTAMP
+
+Record last update timestamp
+
+
+
+
+
+4.27 pir_report_snapshots
+
+Monthly snapshot table storing the computed PIR (Progress in Instruction) values per adviser per month. These values are derived from transfer_records, enrollments, and student data but are stored as snapshots to preserve the state at reporting time for district office submission.
+
+
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+school_year_id
+BIGINT UNSIGNED
+FK
+References school_years.id
+faculty_id
+BIGINT UNSIGNED
+FK
+References faculty.id (the adviser/teacher for this row)
+section_id
+BIGINT UNSIGNED
+FK
+References sections.id
+report_month
+TINYINT
+
+Month number of the report (1=January, 2=February ... 12=December)
+report_year
+SMALLINT
+
+Year of the report (e.g., 2026)
+jan_enrolment_m
+TINYINT
+
+January enrollment count — Male
+jan_enrolment_f
+TINYINT
+
+January enrollment count — Female
+transferred_in_m
+TINYINT
+
+Transferred in June to present — Male cumulative count
+transferred_in_f
+TINYINT
+
+Transferred in June to present — Female cumulative count
+transferred_in_reason
+VARCHAR(255)
+
+Reason for transfer in (from transfer_records)
+transferred_out_m
+TINYINT
+
+Transferred out June to present — Male cumulative count
+transferred_out_f
+TINYINT
+
+Transferred out June to present — Female cumulative count
+transferred_out_reason
+VARCHAR(255)
+
+Reason for transfer out
+dropped_out_m
+TINYINT
+
+Dropped out count — Male
+dropped_out_f
+TINYINT
+
+Dropped out count — Female
+dropped_out_reason
+VARCHAR(255)
+
+Reason for dropping out
+lardo_m
+TINYINT
+
+LARDO count — Male (Learners At Risk of Dropping Out)
+lardo_f
+TINYINT
+
+LARDO count — Female
+lardo_reason
+VARCHAR(255)
+
+Reason for LARDO classification
+overage_m
+TINYINT
+
+Overage learners — Male
+overage_f
+TINYINT
+
+Overage learners — Female
+ip_learners_m
+TINYINT
+
+Indigenous People learners — Male
+ip_learners_f
+TINYINT
+
+Indigenous People learners — Female
+fourps_ctt_m
+TINYINT
+
+4Ps / CTT Recipients — Male
+fourps_ctt_f
+TINYINT
+
+4Ps / CTT Recipients — Female
+alive_learners_m
+TINYINT
+
+ALIVE (Alternative Learning for Inclusive and Varied Education) Learners — Male
+alive_learners_f
+TINYINT
+
+ALIVE Learners — Female
+generated_by
+BIGINT UNSIGNED
+FK
+References users.id (admin who generated the snapshot)
+created_at
+TIMESTAMP
+
+Snapshot generation timestamp
+
+
+
+
+
+4.28 password_reset_tokens
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+email
+VARCHAR(191)
+PK
+Email address requesting password reset
+token
+VARCHAR(255)
+
+Hashed reset token
+created_at
+TIMESTAMP
+
+Token creation timestamp; tokens expire after 60 minutes
+
+
+
+
+
+4.29 backup_logs
+
+Column Name
+
+Data Type
+
+Constraints
+
+Description
+id
+BIGINT UNSIGNED
+PK
+Auto-incrementing primary key
+backup_type
+ENUM
+
+Values: database, files, full
+triggered_by
+ENUM
+
+Values: scheduled, manual
+user_id
+BIGINT UNSIGNED
+FK
+References users.id (NULL for scheduled backups)
+status
+ENUM
+
+Values: success, failed
+file_path
+VARCHAR(500)
+
+Storage path or cloud URL of the backup file
+file_size_mb
+DECIMAL(10,2)
+
+Size of the backup file in megabytes
+notes
+TEXT
+
+Error details if status is failed
+created_at
+TIMESTAMP
+
+Backup timestamp
+
+
+
+
+
+4.30 Complete Database Table Summary
+
+The following table provides a quick reference of all 29 tables in the TALAIS database, their primary purpose, and their relationships.
+
+
+
+#
+
+Table Name
+
+Purpose
+
+Key Relationships
+1
+users
+Authentication credentials for all system users (admin, faculty, parent)
+Referenced by: faculty, parents, audit_logs, notifications, many FK encoded_by/recorded_by fields
+2
+school_years
+Academic year periods (e.g., 2025-2026)
+Referenced by: sections, enrollments, quarters, health_records, violations, nat_results, kpis, pir_snapshots
+3
+grade_levels
+Grade levels Kinder through Grade 6
+Referenced by: sections, grade_level_subjects, faculty (chair_of), nat_results, kpis
+4
+sections
+Class sections per grade level per school year (e.g., GEMINI, WHALE PM)
+References: school_years, grade_levels, faculty (adviser). Referenced by: enrollments, class_schedules, pir_snapshots
+5
+students
+Student profile and demographic data; no login account
+Referenced by: student_parents, enrollments, health_records, violations, transfer_records, sf3_books
+6
+parents
+Parent/guardian profiles with login accounts
+References: users. Referenced by: student_parents
+7
+student_parents
+Many-to-many: links students to parents (one parent may have multiple children)
+References: students, parents
+8
+enrollments
+Per-student per-school-year enrollment record with section, modality, status
+References: students, school_years, grade_levels, sections, users (enrolled_by). Referenced by: assessment_components, student_grades, attendance_records, homeroom_guidance, sf3_books
+9
+faculty
+Teacher profiles, positions, specializations, and grade level chair designations
+References: users, grade_levels (chair_of). Referenced by: sections (adviser), class_schedules, pir_snapshots
+10
+subjects
+Master subject list (e.g., Filipino, Math, Science, GMRC, MAPEH)
+Referenced by: grade_level_subjects, class_schedules, assessment_components, student_grades, nat_results, sf3_books
+11
+grade_level_subjects
+Subject-grade level mapping with DepEd grading weights (WW/PT/QA)
+References: grade_levels, subjects
+12
+class_schedules
+Weekly class timetable per section per subject per teacher
+References: school_years, sections, subjects, faculty
+13
+quarters
+Four grading quarters per school year with open/close dates
+References: school_years. Referenced by: assessment_components, student_grades, homeroom_guidance, attendance_records
+14
+assessment_components
+Raw scores per student per subject per component (WW, PT, QA) per quarter
+References: enrollments, subjects, quarters, users (encoded_by)
+15
+student_grades
+Computed quarterly and final grades with lock and validation status
+References: enrollments, subjects, quarters, users (validated_by, encoded_by)
+16
+attendance_records
+Daily AM/PM attendance per student per class day
+References: enrollments, users (recorded_by)
+17
+student_health_records
+Annual BMI and health data per student for feeding program identification
+References: students, school_years, users (recorded_by)
+18
+student_violations
+Behavioral incident records per student with severity and action taken
+References: students, school_years, users (recorded_by)
+19
+nat_results
+Annual NAT mean percentage scores per subject per grade level
+References: school_years, subjects, grade_levels, users (recorded_by)
+20
+key_performance_indicators
+Annual computed DepEd KPI values (promotion rate, dropout rate, etc.)
+References: school_years, grade_levels, users (computed_by)
+21
+audit_logs
+Immutable log of all system actions with old/new value snapshots
+References: users (user_id)
+22
+notifications
+In-app and email notification records per user (Laravel standard)
+References: users (notifiable_id)
+23
+grade_review_assignments
+Formal assignment records where a teacher is designated to review another teacher's grade records
+References: school_years, faculty (reviewer + reviewee), sections, quarters, users (assigned_by)
+24
+homeroom_guidance_assessments
+Per-quarter competency ratings (0–4) for Homeroom Guidance — appears on Form 138 back
+References: enrollments, quarters, users (encoded_by)
+25
+transfer_records
+Detailed log of each T/I, T/O, dropout, NLS, and internal section transfer event with dates and reasons
+References: students, school_years, sections (from/to), users (processed_by)
+26
+sf3_book_records
+Textbook issuance and return tracking per student per subject (for SF3)
+References: enrollments, subjects, users (recorded_by)
+27
+pir_report_snapshots
+Monthly PIR report data per adviser per section stored as snapshots
+References: school_years, faculty, sections, users (generated_by)
+28
+password_reset_tokens
+Secure one-time tokens for password reset via email
+References: users (via email)
+29
+backup_logs
+Log of all manual and scheduled system backup operations
+References: users (user_id)
+
+
+
+
+5. Mini-Project Criteria Compliance Mapping
+
+The following table maps each ITSD 82 Mini Project criterion to the corresponding TALAIS feature(s) to demonstrate compliance with the course requirements.
+
+
+
+Pts
+
+Criterion
+
+TALAIS Implementation
+15
+User Role Management
+Three RBAC roles: Admin/Registrar, Faculty, Parent. Student accounts are intentionally excluded — as an elementary school, students do not directly use the system. Each role has distinct permissions enforced via Laravel middleware and Gates. User status management (active/inactive/suspended) in users table. Avatar upload, profile management per user.
+15
+Authentication System
+Secure login with bcrypt/Argon2 hashing. 2FA via email OTP (Gmail SMTP). Account lockout after 5 failed attempts (failed_login_count field). Session timeout. Password reset via secure token. Password policy enforcement (min 8 chars, mixed case, number, special char).
+10
+Audit Logging
+audit_logs table captures all CRUD operations with old_values and new_values JSON, user ID, IP, user agent, URL, and timestamp. Admin-only filterable log viewer. Export to Excel/CSV.
+15
+Dashboard
+Admin dashboard: enrollment statistics, grade analytics, attendance summaries, KPI widgets, NAT performance charts. Teacher dashboard: class overview. Interactive charts via Chart.js/D3.js. Date range filters. AJAX data refresh.
+10
+Real-Time Notifications
+notifications table (Laravel notifications). In-app bell with unread count. Email alerts via Gmail SMTP for report card readiness, absence warnings, backup status. Mark all as read.
+5
+Warning & Alert System
+Absence threshold alerts at 15% and 20%. Failed login CAPTCHA trigger. Confirmation modals for delete operations. Session expiration countdown warnings.
+10
+Automated Backup System
+Scheduled automated database backups. backup_logs table tracks all backups. Email notification on success/failure. Manual backup option for admin. Storage path configuration.
+10
+Import & Export
+Bulk student import via Excel template during enrollment. Export attendance, grades, health data to Excel, CSV, and PDF. Import validation with error reporting per row.
+10
+Reporting System
+Auto-generated DepEd forms: SF1 (School Register with all 45 columns per student), SF2 (Daily Attendance per class per month), SF3 (Books Issued and Returned), SF4 (Monthly Learner Movement consolidated per grade), SF5 (Report on Promotions with 5 proficiency bands), Form 138/SF9 (Report Card with grade-level-specific subjects and Homeroom Guidance assessment), Form 137/SF10 (Permanent Record), PIR Report (Progress in Instruction with LARDO, 4Ps, ALIVE, IP learner columns). KPI report, NAT performance report, student tracing report, quarterly exam analytics. PDF and Excel output. Print-friendly formatting.
+5
+PDF Generation & Printing
+Professional PDF templates with school logo, header/footer, page numbers, generation date. Downloadable and printable Form 137, Form 138, enrollment certification. Laravel DomPDF or Snappy integration.
+10
+CRUD with Notifications
+All modules implement full CRUD with success/error toasts, admin audit log entries, soft delete (deleted_at), restore option, and cascade delete warnings.
+10
+Form Validation & UX
+Client-side (Vue/React) and server-side (Laravel Request validation) for all forms. Inline validation on blur. Loading spinners. Birth certificate name validation for enrollment accuracy.
+10
+Advanced Data Controls
+All data tables include pagination (10/25/50/100 per page), global search, column filters, sortable columns, bulk actions, and export of current view.
+10
+Advanced User Management
+Admin can create/edit/deactivate all user accounts, assign roles, view login history (audit_logs), force logout (session invalidation), and bulk import users via Excel.
+10
+Site Settings
+Admin-configurable: school name/logo, grading weights per grade level, enrollment period dates, quarter dates, DepEd school forms templates, SMTP configuration, backup schedule.
+15
+Security & Performance
+Rate limiting middleware (100 req/min per IP via Laravel Throttle). SQL injection prevention via Eloquent ORM. XSS output encoding. CSRF tokens. bcrypt password hashing. HSTS and security headers. Input sanitization.
+10
+Professional UI/UX
+Responsive design (React + Tailwind CSS). Consistent color scheme. Loading states and skeleton screens. Empty state illustrations. Breadcrumb navigation. WCAG 2.1 accessibility. Cross-browser compatibility.
+
+
+
+
+6. Technology Stack
+
+
+
+Layer
+
+Technology
+
+Purpose in TALAIS
+Frontend
+React (ReactJS)
+Component-based UI for all role-specific dashboards (enrollment module, admin panel, faculty panel, parent portal)
+Frontend
+Tailwind CSS
+Responsive, utility-first styling for professional and accessible UI
+Backend
+PHP / Laravel
+RESTful API, business logic, RBAC via Laravel Gates & Policies, Eloquent ORM, Queue jobs for notifications
+Database
+MySQL
+Relational database for all student, faculty, enrollment, grades, attendance, and health data
+Authentication
+Laravel Sanctum + OTP
+SPA authentication tokens + email OTP for 2FA
+Email
+Gmail SMTP
+Transactional emails: notifications, password resets, backup alerts, report cards
+PDF Generation
+Laravel DomPDF / Snappy
+Auto-generate Form 137, Form 138, SF1, SF2, enrollment certifications
+Charts
+Chart.js / Recharts
+Dashboard analytics: grade distributions, attendance trends, KPI metrics, NAT performance
+Version Control
+GitHub
+Source code repository with README and deployment workflows
+Local Dev
+XAMPP
+Local development environment with Apache + MySQL + PHP
+IDE
+VS Code
+Primary code editor with Laravel and React extensions
+
+
+
+
+
+
+7. Project Deliverables Checklist
+
+The following checklist outlines all required deliverables per the ITSD 82 Mini Project Criteria Guide, along with TALAIS-specific notes on each.
+
+
+
+Deliverable
+
+TALAIS Notes
+
+Status
+Source Code — GitHub Repository with README
+Laravel (backend) + React (frontend) monorepo. README includes: setup instructions, environment variables, database seeding, and deployment guide. Repository: github.com/[team]/talais
+Required
+Database Schema — ER Diagram
+Full ER diagram showing all 28 tables, primary keys, foreign keys, and cardinality. Exportable from MySQL Workbench or dbdiagram.io. SQL dump includes table structure, seed data for subjects, grade levels, and sample school year.
+Required
+User Manual — PDF with Screenshots
+Role-specific manuals for Admin/Registrar, Faculty, and Parent. Covers: login and 2FA, enrollment workflow, grade encoding, attendance taking, report card generation, SF1–SF5 and PIR report generation, parent portal access.
+Required
+Technical Documentation — API Docs & Architecture
+Laravel API routes documented via Swagger/OpenAPI or Postman collection. System architecture diagram showing React frontend ? Laravel API ? MySQL. RBAC permission matrix. Deployment architecture (Apache + PHP + MySQL via XAMPP for local; cloud for live).
+Required
+Presentation — 10 Slides Demoing Features
+Recommended slide structure: (1) Title/Team, (2) Problem Statement — MIS manual processes, (3) TALAIS Overview and User Roles, (4) Enrollment Module demo, (5) Grading and Form 138 generation, (6) Attendance and SF2/SF4, (7) Analytics Dashboard and KPI, (8) Parent Portal, (9) Security and Audit Logs, (10) School Forms Reference (SF1–SF5, PIR, Form 137).
+Required
+Live Demo URL — Deployed Application
+Application deployed on agreed hosting arrangement with Musuan Integrated School. Live URL provided with functional test data. Admin dashboard accessible for demo.
+Required
+Test Accounts — Admin + Faculty + Parent
+Admin: admin@musuan.edu.ph / [password]. Faculty (Adviser): faculty@musuan.edu.ph / [password]. Parent: parent@musuan.edu.ph / [password]. Test data includes sample Grade 6 GEMINI section and Kinder WHALE PM section from actual SF1 files.
+Required
+School Form Templates — Official Formats
+DepEd-standard form templates (SF1–SF5, Form 137, Form 138, PIR) in the school's specific format are to be provided by Musuan Integrated School administration and uploaded via the Site Settings module.
+From School
+Grading Formulas Configuration
+Grade computation weights per grade level configured in grade_level_subjects table. Homeroom Guidance competencies and descriptors configured per grade level in system settings.
+From School
+
+
+
+
+End of Document
+
+This document serves as the primary technical specification for TALAIS. All features and database tables are derived directly from on-site interviews with Musuan Integrated School administration and faculty, the capstone manuscript, and the ITSD 82 Mini Project Criteria Guide. The school will provide official form templates and grading formulas to be configured in the system settings.
+
+
+
+

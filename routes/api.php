@@ -1,0 +1,116 @@
+<?php
+
+use App\Http\Controllers\Api\AssessmentComponentController;
+use App\Http\Controllers\Api\AttendanceController;
+use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\BackupLogController;
+use App\Http\Controllers\Api\ClassScheduleController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EnrollmentController;
+use App\Http\Controllers\Api\FacultyController;
+use App\Http\Controllers\Api\GradeController;
+use App\Http\Controllers\Api\GradeLevelController;
+use App\Http\Controllers\Api\GradeReviewController;
+use App\Http\Controllers\Api\HealthRecordController;
+use App\Http\Controllers\Api\HomeroomGuidanceController;
+use App\Http\Controllers\Api\KpiController;
+use App\Http\Controllers\Api\MeController;
+use App\Http\Controllers\Api\NatResultController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ParentController;
+use App\Http\Controllers\Api\ParentPortalController;
+use App\Http\Controllers\Api\PirReportController;
+use App\Http\Controllers\Api\QuarterController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\SchoolSettingController;
+use App\Http\Controllers\Api\SchoolYearController;
+use App\Http\Controllers\Api\SectionController;
+use App\Http\Controllers\Api\Sf3BookController;
+use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\StudentImportController;
+use App\Http\Controllers\Api\SubjectController;
+use App\Http\Controllers\Api\TransferController;
+use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ViolationController;
+use Illuminate\Support\Facades\Route;
+
+/**
+ * TALAIS REST API (mounted at /api/v1).
+ *
+ * The frontend talks to these endpoints through `resources/js/lib/api.js`.
+ * Sanctum stateful cookies are used for authentication, so all routes are
+ * placed behind the `auth:sanctum` guard and rely on the session cookie.
+ */
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/me', MeController::class);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+
+    Route::post('/uploads', UploadController::class);
+
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('dashboard.summary');
+    Route::get('/dashboard/analytics', [DashboardController::class, 'analytics'])->name('dashboard.analytics');
+
+    Route::get('/settings/school', [SchoolSettingController::class, 'show']);
+    Route::put('/settings/school', [SchoolSettingController::class, 'update'])
+        ->middleware('role:admin');
+
+    Route::apiResource('grade-levels', GradeLevelController::class);
+    Route::apiResource('school-years', SchoolYearController::class);
+    Route::apiResource('sections', SectionController::class);
+    Route::apiResource('subjects', SubjectController::class);
+    Route::apiResource('quarters', QuarterController::class);
+    Route::apiResource('faculty', FacultyController::class);
+    Route::apiResource('parents', ParentController::class);
+
+    Route::get('students/lookup', [StudentController::class, 'lookup'])->name('students.lookup');
+    Route::apiResource('students', StudentController::class);
+
+    Route::apiResource('enrollments', EnrollmentController::class);
+    Route::post('students/import', StudentImportController::class)->name('students.import');
+
+    Route::apiResource('class-schedules', ClassScheduleController::class);
+    Route::apiResource('assessment-components', AssessmentComponentController::class);
+    Route::apiResource('grades', GradeController::class);
+    Route::post('attendance/bulk', [AttendanceController::class, 'bulk'])->name('attendance.bulk');
+    Route::get('attendance/summary', [AttendanceController::class, 'summary'])->name('attendance.summary');
+    Route::apiResource('attendance', AttendanceController::class);
+    Route::apiResource('homeroom-guidance', HomeroomGuidanceController::class);
+    Route::apiResource('sf3-book-records', Sf3BookController::class);
+    Route::apiResource('health-records', HealthRecordController::class);
+    Route::apiResource('violations', ViolationController::class);
+    Route::apiResource('transfers', TransferController::class);
+    Route::apiResource('nat-results', NatResultController::class);
+    Route::post('kpis/compute', [KpiController::class, 'compute'])->name('kpis.compute');
+    Route::apiResource('kpis', KpiController::class);
+    Route::apiResource('pir-reports', PirReportController::class);
+    Route::apiResource('grade-reviews', GradeReviewController::class);
+
+    Route::middleware(['role:parent', 'parent.scope'])->group(function () {
+        Route::get('parent-portal', ParentPortalController::class)->name('parent-portal.index');
+    });
+
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('sf1', [ReportController::class, 'sf1'])->name('sf1');
+        Route::get('sf2', [ReportController::class, 'sf2'])->name('sf2');
+        Route::get('sf4', [ReportController::class, 'sf4'])->name('sf4');
+        Route::get('sf5', [ReportController::class, 'sf5'])->name('sf5');
+        Route::get('form137', [ReportController::class, 'form137'])->name('form137');
+        Route::get('form138', [ReportController::class, 'form138'])->name('form138');
+        Route::get('pir', [ReportController::class, 'pir'])->name('pir');
+    });
+
+    Route::middleware(['role:admin'])->group(function () {
+        Route::apiResource('users', UserController::class);
+        Route::post('users/{user}/restore', [UserController::class, 'restore']);
+        Route::post('users/{user}/unlock', [UserController::class, 'unlock']);
+        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword']);
+        Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
+        Route::post('backup-logs/run', [BackupLogController::class, 'run'])->name('backup-logs.run');
+        Route::apiResource('backup-logs', BackupLogController::class)->only(['index', 'show', 'store']);
+    });
+});

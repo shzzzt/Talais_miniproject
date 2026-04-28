@@ -1,6 +1,7 @@
-#env
+# env files
 .env
 .env.*
+!.env.example
 
 # Logs
 logs
@@ -11,10 +12,35 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+# Dependencies
+/node_modules
+/vendor
+
+# Build artifacts
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
 dist
 dist-ssr
 *.local
+
+# Laravel storage / cache
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+/bootstrap/cache/*.php
+
+# Database
+*.sqlite
+*.sqlite-journal
 
 # Editor directories and files
 .vscode/*
@@ -27,4 +53,10 @@ dist-ssr
 *.sln
 *.sw?
 
-.env
+# Misc
+auth.json
+.phpunit.cache
+.phpunit.result.cache
+Homestead.yaml
+Homestead.json
+.phpactor.json
