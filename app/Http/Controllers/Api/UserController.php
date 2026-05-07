@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -17,16 +18,16 @@ class UserController extends Controller
     {
         $query = User::query()
             ->with('roles:id,name')
-            ->when($request->filled('role'), fn ($q) => $q->where('role', $request->string('role')))
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('role'), fn($q) => $q->where('role', $request->string('role')))
+            ->when($request->filled('status'), fn($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('search'), function ($q) use ($request) {
-                $search = '%'.$request->string('search').'%';
+                $search = '%' . $request->string('search') . '%';
                 $q->where(function ($w) use ($search) {
                     $w->where('name', 'ilike', $search)
                         ->orWhere('email', 'ilike', $search);
                 });
             })
-            ->when($request->boolean('with_trashed'), fn ($q) => $q->withTrashed());
+            ->when($request->boolean('with_trashed'), fn($q) => $q->withTrashed());
 
         $orderBy = $request->string('order', '-created_at')->value();
         $direction = str_starts_with($orderBy, '-') ? 'desc' : 'asc';
@@ -49,7 +50,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:160', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
-            'role' => ['required', Rule::in(['admin', 'faculty', 'parent'])],
+            'role' => ['required', Rule::in(['admin', 'school_admin', 'faculty', 'parent'])],
             'is_grade_level_head' => ['boolean'],
             'phone_number' => ['nullable', 'string', 'max:30'],
             'status' => ['nullable', Rule::in(['active', 'inactive', 'suspended'])],
@@ -67,6 +68,7 @@ class UserController extends Controller
             'two_factor_enabled' => (bool) ($data['two_factor_enabled'] ?? false),
         ]);
 
+        Role::findOrCreate($data['role'], 'web');
         $user->syncRoles([$data['role']]);
 
         return response()->json(['data' => $this->presentOne($user->fresh('roles'))], 201);
@@ -87,7 +89,7 @@ class UserController extends Controller
             'name' => ['sometimes', 'required', 'string', 'max:120'],
             'email' => ['sometimes', 'required', 'email', 'max:160', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Password::min(8)->letters()->numbers()],
-            'role' => ['sometimes', 'required', Rule::in(['admin', 'faculty', 'parent'])],
+            'role' => ['sometimes', 'required', Rule::in(['admin', 'school_admin', 'faculty', 'parent'])],
             'is_grade_level_head' => ['boolean'],
             'phone_number' => ['nullable', 'string', 'max:30'],
             'status' => ['nullable', Rule::in(['active', 'inactive', 'suspended'])],
@@ -103,6 +105,7 @@ class UserController extends Controller
         $user->save();
 
         if (! empty($data['role'])) {
+            Role::findOrCreate($data['role'], 'web');
             $user->syncRoles([$data['role']]);
         }
 
@@ -159,7 +162,7 @@ class UserController extends Controller
 
     private function present($collection)
     {
-        return $collection->map(fn ($user) => $this->presentOne($user));
+        return $collection->map(fn($user) => $this->presentOne($user));
     }
 
     private function presentOne(User $user): array

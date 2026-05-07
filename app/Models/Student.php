@@ -50,8 +50,7 @@ class Student extends Model
     public function parents(): BelongsToMany
     {
         return $this->belongsToMany(ParentGuardian::class, 'student_parents', 'student_id', 'parent_id')
-            ->withPivot('is_primary')
-            ->withTimestamps();
+            ->withPivot('is_primary');
     }
 
     public function enrollments(): HasMany

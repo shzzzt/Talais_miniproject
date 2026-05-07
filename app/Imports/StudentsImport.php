@@ -32,6 +32,13 @@ class StudentsImport implements ToCollection, WithHeadingRow
                         ? $this->service->findContinuingByLrn((string) $row['lrn'])
                         : null;
 
+                    $genderRaw = strtolower(trim((string) ($row['gender'] ?? '')));
+                    $gender = match ($genderRaw) {
+                        'male', 'm' => 'Male',
+                        'female', 'f' => 'Female',
+                        default => ($row['gender'] ?? null) ? $row['gender'] : null,
+                    };
+
                     $payload = [
                         'lrn' => $row['lrn'] ?? null,
                         'first_name' => $row['first_name'] ?? null,
@@ -39,7 +46,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
                         'last_name' => $row['last_name'] ?? null,
                         'suffix' => $row['suffix'] ?? null,
                         'birthday' => $row['birthday'] ?? $row['birth_date'] ?? null,
-                        'gender' => $row['gender'] ?? null,
+                        'gender' => $gender,
                         'address' => $row['address'] ?? null,
                         'parent_name' => $row['parent_name'] ?? null,
                         'parent_contact' => $row['parent_contact'] ?? null,

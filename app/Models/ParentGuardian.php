@@ -40,8 +40,7 @@ class ParentGuardian extends Model
     public function students(): BelongsToMany
     {
         return $this->belongsToMany(Student::class, 'student_parents', 'parent_id', 'student_id')
-            ->withPivot('is_primary')
-            ->withTimestamps();
+            ->withPivot('is_primary');
     }
 
     public function getFullNameAttribute(): string

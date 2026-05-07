@@ -19,7 +19,7 @@ const GRADE_LEVELS = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6
 export default function Subjects() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "", code: "", grade_level: "", teacher_name: "" });
+  const [form, setForm] = useState({ name: "", code: "", grade_level: "", minutes_per_day: "50" });
   const [filterGrade, setFilterGrade] = useState("All");
   const queryClient = useQueryClient();
 
@@ -43,19 +43,31 @@ export default function Subjects() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subjects"] }),
   });
 
-  const resetForm = () => setForm({ name: "", code: "", grade_level: "", teacher_name: "" });
+  const resetForm = () => setForm({ name: "", code: "", grade_level: "", minutes_per_day: "50" });
 
   const handleSubmit = () => {
+    const minutes = form.minutes_per_day === "" ? undefined : parseInt(form.minutes_per_day, 10);
+    const payload = {
+      name: form.name,
+      code: form.code || undefined,
+      grade_level: form.grade_level,
+      minutes_per_day: Number.isFinite(minutes) ? minutes : undefined,
+    };
     if (editing) {
-      updateMutation.mutate({ id: editing.id, data: form });
+      updateMutation.mutate({ id: editing.id, data: payload });
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate(payload);
     }
   };
 
   const openEdit = (s) => {
     setEditing(s);
-    setForm({ name: s.name, code: s.code || "", grade_level: s.grade_level, teacher_name: s.teacher_name || "" });
+    setForm({
+      name: s.name,
+      code: s.code || "",
+      grade_level: s.grade_level,
+      minutes_per_day: s.minutes_per_day != null ? String(s.minutes_per_day) : "50",
+    });
     setShowForm(true);
   };
 
@@ -93,7 +105,7 @@ export default function Subjects() {
                 <TableHead className="text-xs">Code</TableHead>
                 <TableHead className="text-xs">Subject Name</TableHead>
                 <TableHead className="text-xs">Grade Level</TableHead>
-                <TableHead className="text-xs">Teacher</TableHead>
+                <TableHead className="text-xs">Minutes / day</TableHead>
                 <TableHead className="text-xs w-20">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -103,7 +115,7 @@ export default function Subjects() {
                   <TableCell className="text-xs font-mono text-slate-500">{s.code}</TableCell>
                   <TableCell className="font-medium text-sm">{s.name}</TableCell>
                   <TableCell><Badge variant="secondary">{s.grade_level}</Badge></TableCell>
-                  <TableCell className="text-sm text-slate-600">{s.teacher_name || "—"}</TableCell>
+                  <TableCell className="text-sm text-slate-600">{s.minutes_per_day ?? "—"}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(s)}>
@@ -147,8 +159,14 @@ export default function Subjects() {
               </Select>
             </div>
             <div>
-              <Label>Teacher Name</Label>
-              <Input value={form.teacher_name} onChange={e => setForm({ ...form, teacher_name: e.target.value })} />
+              <Label>Minutes per day</Label>
+              <Input
+                type="number"
+                min={0}
+                max={600}
+                value={form.minutes_per_day}
+                onChange={(e) => setForm({ ...form, minutes_per_day: e.target.value })}
+              />
             </div>
           </div>
           <DialogFooter>

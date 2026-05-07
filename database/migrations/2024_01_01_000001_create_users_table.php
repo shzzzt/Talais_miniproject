@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('name', 150);
             $table->string('email', 191)->unique();
             $table->string('password');
-            $table->enum('role', ['admin', 'faculty', 'parent']);
+            $table->enum('role', ['admin', 'school_admin', 'faculty', 'parent']);
             $table->boolean('is_grade_level_head')->default(false);
             $table->string('phone_number', 20)->nullable();
             $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');

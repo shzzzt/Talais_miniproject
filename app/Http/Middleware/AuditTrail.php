@@ -21,6 +21,17 @@ class AuditTrail
                 'ip' => $request->ip(),
                 'user_agent' => substr((string) $request->userAgent(), 0, 255),
             ]);
+
+            if ($request->user() && $request->isMethod('GET') && ! $request->is('api/*') && $request->route()) {
+                activity('access')
+                    ->causedBy($request->user())
+                    ->event('viewed')
+                    ->withProperties([
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                    ])
+                    ->log('Visited ' . $request->path());
+            }
         }
 
         return $next($request);

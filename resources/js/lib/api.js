@@ -114,8 +114,26 @@ const entitiesProxy = new Proxy(
     },
 );
 
+async function lookupStudentByLrn(lrn) {
+    const { data } = await http.get('/students/lookup', { params: { lrn: String(lrn).trim() } });
+    return data?.data ?? null;
+}
+
+async function importStudentsExcel(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const { data } = await http.post('/students/import', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data?.data ?? data;
+}
+
 export const base44 = {
     entities: entitiesProxy,
+    students: {
+        lookup: lookupStudentByLrn,
+        importExcel: importStudentsExcel,
+    },
     auth: {
         async me() {
             const { data } = await http.get('/me');

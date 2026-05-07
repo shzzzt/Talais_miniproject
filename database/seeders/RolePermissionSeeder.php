@@ -116,10 +116,58 @@ class RolePermissionSeeder extends Seeder
         }
 
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $schoolAdmin = Role::firstOrCreate(['name' => 'school_admin', 'guard_name' => 'web']);
         $faculty = Role::firstOrCreate(['name' => 'faculty', 'guard_name' => 'web']);
         $parent = Role::firstOrCreate(['name' => 'parent', 'guard_name' => 'web']);
 
         $admin->syncPermissions(Permission::all());
+
+        /** School admin (roles.pdf “Staff”): sections, enrollment, scheduling, analytics, forms/exports, violations — not system-wide admin tools. */
+        $schoolAdmin->syncPermissions([
+            'students.view',
+            'students.create',
+            'students.update',
+            'students.delete',
+            'students.import',
+            'students.export',
+
+            'enrollments.view',
+            'enrollments.create',
+            'enrollments.update',
+            'enrollments.delete',
+
+            'sections.view',
+            'sections.create',
+            'sections.update',
+            'sections.delete',
+
+            'subjects.view',
+            'subjects.manage',
+
+            'school_years.view',
+            'grade_levels.view',
+
+            'class_schedules.view',
+            'class_schedules.manage',
+
+            'violations.view',
+            'violations.create',
+            'violations.update',
+
+            'reports.dashboard',
+            'reports.analytics',
+            'reports.sf1',
+            'reports.sf2',
+            'reports.sf3',
+            'reports.sf4',
+            'reports.sf5',
+            'reports.form137',
+            'reports.form138',
+            'reports.pir',
+            'reports.export',
+
+            'notifications.view',
+        ]);
 
         $faculty->syncPermissions([
             'students.view',

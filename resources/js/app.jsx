@@ -9,6 +9,8 @@ import { AuthProvider } from '@/lib/AuthContext';
 import { SchoolSettingsProvider } from '@/lib/SchoolSettingsContext';
 import { Toaster } from '@/components/ui/toaster';
 
+import { Toaster as SonnerRoot } from 'sonner';
+
 const appName = import.meta.env.VITE_APP_NAME || 'TALAIS';
 
 createInertiaApp({
@@ -33,6 +35,7 @@ createInertiaApp({
                                 <SchoolSettingsProvider>
                                     {layout}
                                     <Toaster />
+                                    <SonnerRoot position="top-right" richColors />
                                 </SchoolSettingsProvider>
                             </AuthProvider>
                         );

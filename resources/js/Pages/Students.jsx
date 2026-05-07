@@ -1,8 +1,10 @@
 import AppLayout from '@/Layouts/AppLayout';
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/lib/api";
-import { Plus, Search, Edit2, Trash2, Download, Users, Filter } from "lucide-react";
+import { toast } from "sonner";
+import { extractApiError } from "@/lib/utils";
+import { Plus, Search, Edit2, Trash2, Download, Users, Upload } from "lucide-react";
 import { Link } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +20,7 @@ import PageHeader from "../components/shared/PageHeader";
 import EmptyState from "../components/shared/EmptyState";
 import StudentForm from "../components/enrollment/StudentForm";
 
-const GRADE_LEVELS = ["All","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10"];
+const GRADE_LEVELS = ["All","Kindergarten","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10"];
 
 export default function Students() {
   const [showForm, setShowForm] = useState(false);
@@ -28,6 +30,13 @@ export default function Students() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [deleteId, setDeleteId] = useState(null);
   const queryClient = useQueryClient();
+  const importInputRef = useRef(null);
+
+  const { data: schoolYears = [] } = useQuery({
+    queryKey: ["schoolYears"],
+    queryFn: () => base44.entities.SchoolYear.list("-created_date"),
+  });
+  const activeYear = schoolYears.find((y) => y.is_active);
 
   const { data: students = [], isLoading } = useQuery({
     queryKey: ["students"],
@@ -35,23 +44,69 @@ export default function Students() {
   });
 
   const { data: sections = [] } = useQuery({
-    queryKey: ["sections"],
-    queryFn: () => base44.entities.Section.list(),
+    queryKey: ["sections", activeYear?.id],
+    queryFn: () =>
+      activeYear?.id
+        ? base44.entities.Section.filter({ school_year_id: activeYear.id })
+        : base44.entities.Section.list(),
   });
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Student.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["students"] }); setShowForm(false); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      setShowForm(false);
+      toast.success("Student saved");
+    },
+    onError: (e) => toast.error(extractApiError(e)),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Student.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["students"] }); setShowForm(false); setEditingStudent(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      queryClient.invalidateQueries({ queryKey: ["student"] });
+      setShowForm(false);
+      setEditingStudent(null);
+      toast.success("Student updated");
+    },
+    onError: (e) => toast.error(extractApiError(e)),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Student.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["students"] }); setDeleteId(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      setDeleteId(null);
+      toast.success("Student removed");
+    },
+    onError: (e) => toast.error(extractApiError(e)),
+  });
+
+  const importMutation = useMutation({
+    mutationFn: (file) => base44.students.importExcel(file),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      const errCount = res?.errors?.length ?? 0;
+      toast.success(
+        `Import finished: ${res?.created ?? 0} created, ${res?.updated ?? 0} updated` +
+          (errCount ? `, ${errCount} row errors` : "")
+      );
+      if (errCount && res.errors?.length) {
+        toast.message("Row errors", {
+          description: res.errors
+            .slice(0, 5)
+            .map((r) => `Row ${r.row}: ${r.message}`)
+            .join("\n"),
+        });
+      }
+      importInputRef.current && (importInputRef.current.value = "");
+    },
+    onError: (e) => toast.error(extractApiError(e)),
   });
 
   const handleSubmit = (formData) => {
@@ -99,7 +154,25 @@ export default function Students() {
         title="Students"
         description={`${filtered.length} student${filtered.length !== 1 ? "s" : ""} found`}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,.txt"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) importMutation.mutate(f);
+              }}
+            />
+            <Button
+              variant="outline"
+              type="button"
+              disabled={importMutation.isPending}
+              onClick={() => importInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" /> Import Excel
+            </Button>
             <Button variant="outline" onClick={downloadSF1}>
               <Download className="w-4 h-4 mr-2" /> SF1
             </Button>

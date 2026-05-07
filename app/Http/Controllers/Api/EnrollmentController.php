@@ -13,7 +13,12 @@ class EnrollmentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $year = $request->integer('school_year_id') ?: SchoolYear::active()?->id;
+        $year = null;
+        if ($request->filled('school_year_id')) {
+            $year = $request->integer('school_year_id');
+        } elseif (! $request->filled('student_id')) {
+            $year = SchoolYear::active()?->id;
+        }
 
         $enrollments = Enrollment::query()
             ->with([
@@ -27,6 +32,7 @@ class EnrollmentController extends Controller
             ->when($request->filled('section_id'), fn ($q) => $q->where('section_id', $request->integer('section_id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('enrollment_type'), fn ($q) => $q->where('enrollment_type', $request->string('enrollment_type')))
+            ->when($request->filled('student_id'), fn ($q) => $q->where('student_id', $request->integer('student_id')))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $q->whereHas('student', function ($w) use ($term) {
@@ -91,7 +97,7 @@ class EnrollmentController extends Controller
             'grade_level_id' => [$required, 'integer', 'exists:grade_levels,id'],
             'section_id' => ['nullable', 'integer', 'exists:sections,id'],
             'enrollment_date' => [$required, 'date'],
-            'enrollment_type' => ['nullable', Rule::in(['new', 'continuing', 'transferee'])],
+            'enrollment_type' => ['nullable', Rule::in(['new', 'continuing', 'transfer_in'])],
             'status' => ['nullable', Rule::in(['enrolled', 'transferred_in', 'transferred_out', 'dropped', 'completed', 'graduated'])],
             'transfer_date' => ['nullable', 'date'],
             'transfer_destination' => ['nullable', 'string', 'max:255'],

@@ -20,6 +20,7 @@ class StudentController extends Controller
     {
         $query = Student::query()
             ->with(['parents', 'currentEnrollment.gradeLevel', 'currentEnrollment.section'])
+            ->when($request->filled('id'), fn ($q) => $q->where('id', $request->integer('id')))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $q->where(function ($w) use ($term) {

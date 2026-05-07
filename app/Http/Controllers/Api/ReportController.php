@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ReportsSchoolContext;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\Enrollment;
@@ -15,10 +16,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 
 class ReportController extends Controller
 {
+    use ReportsSchoolContext;
+
     public function sf1(Request $request): Response
     {
         $section = $this->resolveSection($request);
@@ -42,7 +44,7 @@ class ReportController extends Controller
             'enrollments' => $enrollments,
         ])->setPaper('legal', 'landscape');
 
-        return $pdf->download($this->filename('SF1', $section, $schoolYear));
+        return $pdf->download($this->pdfFilename('SF1', $section, $schoolYear));
     }
 
     public function sf2(Request $request): Response
@@ -93,7 +95,7 @@ class ReportController extends Controller
             'to' => $to,
         ])->setPaper('legal', 'landscape');
 
-        return $pdf->download($this->filename('SF2', $section, $schoolYear));
+        return $pdf->download($this->pdfFilename('SF2', $section, $schoolYear));
     }
 
     public function sf4(Request $request): Response
@@ -111,12 +113,12 @@ class ReportController extends Controller
                 ->when($schoolYear, fn ($q) => $q->where('school_year_id', $schoolYear->id));
 
             $male = (clone $base)->where('status', 'enrolled')
-                ->whereHas('student', fn ($s) => $s->where('gender', 'male'))
+                ->whereHas('student', fn ($s) => $s->where('gender', 'Male'))
                 ->count();
             $female = (clone $base)->where('status', 'enrolled')
-                ->whereHas('student', fn ($s) => $s->where('gender', 'female'))
+                ->whereHas('student', fn ($s) => $s->where('gender', 'Female'))
                 ->count();
-            $transferIn = (clone $base)->where('enrollment_type', 'transferee')->count();
+            $transferIn = (clone $base)->where('enrollment_type', 'transfer_in')->count();
             $transferOut = (clone $base)->whereIn('status', ['transferred_out', 'transferred'])->count();
             $dropouts = (clone $base)->where('status', 'dropped')->count();
 
@@ -146,7 +148,7 @@ class ReportController extends Controller
             'totals' => $totals,
         ])->setPaper('legal', 'landscape');
 
-        return $pdf->download($this->filename('SF4', null, $schoolYear));
+        return $pdf->download($this->pdfFilename('SF4', null, $schoolYear));
     }
 
     public function sf5(Request $request): Response
@@ -180,7 +182,7 @@ class ReportController extends Controller
             'rows' => $rows,
         ])->setPaper('legal', 'landscape');
 
-        return $pdf->download($this->filename('SF5', $section, $schoolYear));
+        return $pdf->download($this->pdfFilename('SF5', $section, $schoolYear));
     }
 
     public function form137(Request $request): Response
@@ -224,7 +226,7 @@ class ReportController extends Controller
             'enrollments' => $enrollments,
         ]);
 
-        return $pdf->download($this->filename('Form137_'.$student->last_name, null, null));
+        return $pdf->download($this->pdfFilename('Form137_'.$student->last_name, null, null));
     }
 
     public function form138(Request $request): Response
@@ -272,7 +274,7 @@ class ReportController extends Controller
             'attendance' => $attendance,
         ]);
 
-        return $pdf->download($this->filename('Form138_'.$student->last_name, null, $enrollment->schoolYear));
+        return $pdf->download($this->pdfFilename('Form138_'.$student->last_name, null, $enrollment->schoolYear));
     }
 
     public function pir(Request $request): Response
@@ -283,10 +285,10 @@ class ReportController extends Controller
             ->when($schoolYear, fn ($q) => $q->where('school_year_id', $schoolYear->id))
             ->where('status', 'enrolled')->count();
 
-        $male = Student::query()->where('gender', 'male')->whereHas('enrollments', function ($q) use ($schoolYear) {
+        $male = Student::query()->where('gender', 'Male')->whereHas('enrollments', function ($q) use ($schoolYear) {
             $q->when($schoolYear, fn ($e) => $e->where('school_year_id', $schoolYear->id))->where('status', 'enrolled');
         })->count();
-        $female = Student::query()->where('gender', 'female')->whereHas('enrollments', function ($q) use ($schoolYear) {
+        $female = Student::query()->where('gender', 'Female')->whereHas('enrollments', function ($q) use ($schoolYear) {
             $q->when($schoolYear, fn ($e) => $e->where('school_year_id', $schoolYear->id))->where('status', 'enrolled');
         })->count();
 
@@ -336,51 +338,7 @@ class ReportController extends Controller
             'promotion' => $promotion,
         ])->setPaper('a4', 'portrait');
 
-        return $pdf->download($this->filename('PIR', null, $schoolYear));
-    }
-
-    private function resolveSection(Request $request): ?Section
-    {
-        if (! $request->filled('section_id')) {
-            return null;
-        }
-        return Section::with(['gradeLevel', 'adviser'])->findOrFail($request->integer('section_id'));
-    }
-
-    private function resolveSchoolYear(Request $request, ?Section $section): ?SchoolYear
-    {
-        if ($request->filled('school_year_id')) {
-            return SchoolYear::find($request->integer('school_year_id'));
-        }
-        if ($section?->school_year_id) {
-            return SchoolYear::find($section->school_year_id);
-        }
-        return SchoolYear::active() ?? SchoolYear::orderByDesc('id')->first();
-    }
-
-    private function schoolMeta(): array
-    {
-        $defaults = [
-            'name' => 'Musuan Integrated School',
-            'division' => 'Division of Bukidnon',
-            'district' => 'Maramag District',
-            'municipality' => 'Maramag',
-            'school_id' => '300003',
-            'principal' => 'Dr. Weenkie Jhon A. Marcelo',
-        ];
-        $cached = Cache::get('talais.school.settings', []);
-        return array_merge($defaults, $cached);
-    }
-
-    private function filename(string $prefix, ?Section $section, ?SchoolYear $year): string
-    {
-        $parts = array_filter([
-            $prefix,
-            $section?->name,
-            $year?->label,
-            now()->format('Ymd'),
-        ]);
-        return implode('_', $parts).'.pdf';
+        return $pdf->download($this->pdfFilename('PIR', null, $schoolYear));
     }
 
     private function buildAttendanceMatrix(Enrollment $enrollment): array

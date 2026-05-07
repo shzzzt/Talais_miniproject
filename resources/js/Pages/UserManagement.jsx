@@ -13,14 +13,10 @@ import { Switch } from "@/components/ui/switch";
 import PageHeader from "../components/shared/PageHeader";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { http } from "@/lib/api";
+import { ROLE_BADGE_CLASSES, ROLE_LABELS } from "@/lib/roles";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-const roleColors = {
-    admin: "bg-blue-100 text-blue-700",
-    faculty: "bg-emerald-100 text-emerald-700",
-    parent: "bg-amber-100 text-amber-700",
-};
 const statusColors = {
     active: "bg-green-100 text-green-700",
     inactive: "bg-slate-100 text-slate-600",
@@ -167,7 +163,7 @@ export default function UserManagement() {
         <div>
             <PageHeader
                 title="User Management"
-                description="Manage faculty, admin, and parent accounts"
+                description="Manage system administrators, school admins, faculty, and parent accounts"
                 action={
                     <Button onClick={openCreate} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
                         <Plus className="w-4 h-4 mr-2" /> Add User
@@ -175,11 +171,11 @@ export default function UserManagement() {
                 }
             />
 
-            <div className="grid grid-cols-3 gap-4 mb-5">
-                {["admin", "faculty", "parent"].map((role) => (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+                {["admin", "school_admin", "faculty", "parent"].map((role) => (
                     <Card key={role} className="border-0 shadow-sm p-4">
-                        <p className="text-xs text-slate-400 uppercase tracking-wider capitalize">
-                            {role === "admin" ? "Administrators" : role === "faculty" ? "Faculty" : "Parents"}
+                        <p className="text-xs text-slate-400 uppercase tracking-wider">
+                            {ROLE_LABELS[role] ?? role}
                         </p>
                         <p className="text-2xl font-bold text-slate-800 mt-1">
                             {users.filter((u) => u.role === role).length}
@@ -205,7 +201,8 @@ export default function UserManagement() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="All">All Roles</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="admin">System Administrator</SelectItem>
+                            <SelectItem value="school_admin">School Admin</SelectItem>
                             <SelectItem value="faculty">Faculty</SelectItem>
                             <SelectItem value="parent">Parent</SelectItem>
                         </SelectContent>
@@ -260,7 +257,9 @@ export default function UserManagement() {
                                     </TableCell>
                                     <TableCell className="text-sm text-slate-600">{u.email}</TableCell>
                                     <TableCell>
-                                        <Badge className={roleColors[u.role]}>{u.role}</Badge>
+                                        <Badge className={ROLE_BADGE_CLASSES[u.role] ?? "bg-slate-100 text-slate-600"}>
+                                            {ROLE_LABELS[u.role] ?? u.role}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
@@ -364,7 +363,8 @@ export default function UserManagement() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="admin">System Administrator</SelectItem>
+                                        <SelectItem value="school_admin">School Admin</SelectItem>
                                         <SelectItem value="faculty">Faculty</SelectItem>
                                         <SelectItem value="parent">Parent</SelectItem>
                                     </SelectContent>

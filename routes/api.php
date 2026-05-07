@@ -22,12 +22,14 @@ use App\Http\Controllers\Api\ParentPortalController;
 use App\Http\Controllers\Api\PirReportController;
 use App\Http\Controllers\Api\QuarterController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ReportExcelController;
 use App\Http\Controllers\Api\SchoolSettingController;
 use App\Http\Controllers\Api\SchoolYearController;
 use App\Http\Controllers\Api\SectionController;
 use App\Http\Controllers\Api\Sf3BookController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentImportController;
+use App\Http\Controllers\Api\SystemLogController;
 use App\Http\Controllers\Api\SubjectController;
 use App\Http\Controllers\Api\TransferController;
 use App\Http\Controllers\Api\UploadController;
@@ -104,12 +106,26 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('pir', [ReportController::class, 'pir'])->name('pir');
     });
 
+    Route::prefix('reports/excel')->name('reports.excel.')->group(function () {
+        Route::get('sf1', [ReportExcelController::class, 'sf1'])->name('sf1');
+        Route::get('sf2', [ReportExcelController::class, 'sf2'])->name('sf2');
+        Route::get('sf4', [ReportExcelController::class, 'sf4'])->name('sf4');
+        Route::get('sf5', [ReportExcelController::class, 'sf5'])->name('sf5');
+        Route::get('form137', [ReportExcelController::class, 'form137'])->name('form137');
+        Route::get('form138', [ReportExcelController::class, 'form138'])->name('form138');
+        Route::get('pir', [ReportExcelController::class, 'pir'])->name('pir');
+    });
+
     Route::middleware(['role:admin'])->group(function () {
+        Route::get('/dashboard/admin-summary', [DashboardController::class, 'adminSummary'])->name('dashboard.admin-summary');
         Route::apiResource('users', UserController::class);
         Route::post('users/{user}/restore', [UserController::class, 'restore']);
         Route::post('users/{user}/unlock', [UserController::class, 'unlock']);
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword']);
         Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
+        Route::get('system-logs/auth', [SystemLogController::class, 'auth']);
+        Route::get('system-logs/access', [SystemLogController::class, 'access']);
+        Route::get('system-logs/errors', [SystemLogController::class, 'errors']);
         Route::post('backup-logs/run', [BackupLogController::class, 'run'])->name('backup-logs.run');
         Route::apiResource('backup-logs', BackupLogController::class)->only(['index', 'show', 'store']);
     });

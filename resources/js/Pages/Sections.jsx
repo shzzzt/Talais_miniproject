@@ -21,9 +21,18 @@ export default function Sections() {
   const [form, setForm] = useState({ name: "", grade_level: "", adviser_name: "", adviser_email: "", max_capacity: 50 });
   const queryClient = useQueryClient();
 
+  const { data: schoolYears = [] } = useQuery({
+    queryKey: ["schoolYears"],
+    queryFn: () => base44.entities.SchoolYear.list("-created_date"),
+  });
+  const activeYear = schoolYears.find((y) => y.is_active);
+
   const { data: sections = [] } = useQuery({
-    queryKey: ["sections"],
-    queryFn: () => base44.entities.Section.list(),
+    queryKey: ["sections", activeYear?.id],
+    queryFn: () =>
+      activeYear?.id
+        ? base44.entities.Section.filter({ school_year_id: activeYear.id })
+        : base44.entities.Section.list(),
   });
 
   const { data: students = [] } = useQuery({

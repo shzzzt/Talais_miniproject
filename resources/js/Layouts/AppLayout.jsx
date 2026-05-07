@@ -3,12 +3,13 @@ import { Link, router } from "@inertiajs/react";
 import { createPageUrl } from "@/utils";
 import { useAuth } from "@/lib/AuthContext";
 import {
-  LayoutDashboard, UserPlus, Users, ClipboardCheck, BookOpen,
+  LayoutDashboard, Users, ClipboardCheck, BookOpen,
   FileText, HeartPulse, Calendar, Menu, Bell, LogOut,
   GraduationCap, ChevronDown, ChevronRight, BarChart3,
-  AlertTriangle, Settings, Shield, Clock, User, ArrowRightLeft, TrendingUp
+  AlertTriangle, Settings, Shield, Clock, User, ArrowRightLeft, TrendingUp, Files, Database, Activity, UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ROLE_LABELS } from "@/lib/roles";
 import { useSchoolSettings } from "@/lib/SchoolSettingsContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,26 +21,11 @@ import { http } from "@/lib/api";
 
 const NAV_ADMIN = [
   { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
-  { name: "School Year", icon: Calendar, page: "SchoolYears" },
-  {
-    name: "Enrollment", icon: UserPlus, children: [
-      { name: "Students", page: "Students" },
-      { name: "Sections", page: "Sections" },
-      { name: "Subjects", page: "Subjects" },
-    ]
-  },
-  { name: "Attendance", icon: ClipboardCheck, page: "Attendance" },
-  { name: "Grading", icon: BookOpen, page: "Grading" },
-  { name: "Scheduling", icon: Clock, page: "Scheduling" },
-  { name: "Health Records", icon: HeartPulse, page: "HealthRecords" },
-  { name: "Violations", icon: AlertTriangle, page: "Violations" },
-  { name: "Form 137", icon: FileText, page: "Form137" },
-  { name: "Transfers", icon: ArrowRightLeft, page: "Transfers" },
-  { name: "NAT Results", icon: GraduationCap, page: "NatResults" },
-  { name: "KPIs", icon: TrendingUp, page: "Kpi" },
-  { name: "Analytics", icon: BarChart3, page: "Analytics" },
   { name: "User Management", icon: Users, page: "UserManagement" },
-  { name: "Settings", icon: Settings, page: "AdminSettings" },
+  { name: "School Year Settings", icon: Calendar, page: "SchoolYears" },
+  { name: "Logs", icon: Activity, page: "Logs" },
+  { name: "Database Backup", icon: Database, page: "DatabaseBackup" },
+  { name: "System Management", icon: Settings, page: "AdminSettings" },
 ];
 
 const NAV_FACULTY = [
@@ -56,8 +42,35 @@ const NAV_PARENT = [
   { name: "Parent Portal", icon: User, page: "ParentPortal" },
 ];
 
-const ROLE_NAV = { admin: NAV_ADMIN, faculty: NAV_FACULTY, parent: NAV_PARENT };
-const ROLE_COLORS = { admin: "bg-blue-500", faculty: "bg-emerald-500", parent: "bg-amber-500" };
+const NAV_SCHOOL_ADMIN = [
+  { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
+  {
+    name: "Enrollment", icon: UserPlus, children: [
+      { name: "Students", page: "Students" },
+      { name: "Sections", page: "Sections" },
+      { name: "Subjects", page: "Subjects" },
+      { name: "Enroll students", page: "Enrollment" },
+    ]
+  },
+  { name: "Scheduling", icon: Clock, page: "Scheduling" },
+  { name: "Violations", icon: AlertTriangle, page: "Violations" },
+  { name: "Form 137", icon: FileText, page: "Form137" },
+  { name: "Reports (PDF/Excel)", icon: Files, page: "Reports" },
+  { name: "Analytics", icon: BarChart3, page: "Analytics" },
+];
+
+const ROLE_NAV = {
+  admin: NAV_ADMIN,
+  school_admin: NAV_SCHOOL_ADMIN,
+  faculty: NAV_FACULTY,
+  parent: NAV_PARENT,
+};
+const ROLE_COLORS = {
+  admin: "bg-blue-500",
+  school_admin: "bg-violet-500",
+  faculty: "bg-emerald-500",
+  parent: "bg-amber-500",
+};
 
 export default function AppLayout({ children, currentPageName }) {
   const { user, logout, isLoadingAuth, unreadCount, recentNotifications } = useAuth();
@@ -131,8 +144,8 @@ export default function AppLayout({ children, currentPageName }) {
 
         <div className="px-5 py-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <div className={cn("w-2 h-2 rounded-full", ROLE_COLORS[user.role])} />
-            <span className="text-xs text-white/60 capitalize">{user.role === 'admin' ? 'Administrator' : user.role}</span>
+            <div className={cn("w-2 h-2 rounded-full", ROLE_COLORS[user.role] ?? ROLE_COLORS.faculty)} />
+            <span className="text-xs text-white/60">{ROLE_LABELS[user.role] ?? user.role}</span>
           </div>
         </div>
 
@@ -260,7 +273,7 @@ export default function AppLayout({ children, currentPageName }) {
                     </div>
                     <div className="hidden sm:block text-left">
                       <p className="text-xs font-semibold text-slate-700 leading-tight">{user.name}</p>
-                      <p className="text-[10px] text-slate-400 capitalize">{user.role}</p>
+                      <p className="text-[10px] text-slate-400">{ROLE_LABELS[user.role] ?? user.role}</p>
                     </div>
                   </button>
                 </DropdownMenuTrigger>

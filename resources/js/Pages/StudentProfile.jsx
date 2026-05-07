@@ -1,23 +1,37 @@
 import AppLayout from '@/Layouts/AppLayout';
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/lib/api";
-import { Link, usePage } from "@inertiajs/react";
-
-function useStudentIdFromRoute() {
-  const { props, url } = usePage();
-  if (props?.id) return String(props.id);
-  if (props?.student?.id) return String(props.student.id);
-  const match = (url || (typeof window !== 'undefined' ? window.location.pathname : ''))
-    .match(/StudentProfile\/(\d+)/i);
-  return match ? match[1] : null;
-}
+import { toast } from "sonner";
+import { extractApiError } from "@/lib/utils";
+import { Link, router, usePage } from "@inertiajs/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, User, BookOpen, ClipboardCheck, HeartPulse, AlertTriangle, Calendar } from "lucide-react";
+import { ArrowLeft, BookOpen, ClipboardCheck, HeartPulse, AlertTriangle, Pencil, Trash2, GraduationCap } from "lucide-react";
+import StudentForm from "../components/enrollment/StudentForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+function useStudentIdFromRoute() {
+  const { props, url } = usePage();
+  if (props?.id) return String(props.id);
+  if (props?.student?.id) return String(props.student.id);
+  const match = (url || (typeof window !== "undefined" ? window.location.pathname : "")).match(
+    /StudentProfile\/(\d+)/i
+  );
+  return match ? match[1] : null;
+}
 
 const statusColors = {
   enrolled: "bg-emerald-100 text-emerald-700",
@@ -48,11 +62,53 @@ const QUARTERS = ["Q1", "Q2", "Q3", "Q4"];
 
 export default function StudentProfile() {
   const id = useStudentIdFromRoute();
+  const queryClient = useQueryClient();
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteStudent, setShowDeleteStudent] = useState(false);
+
+  const { data: schoolYears = [] } = useQuery({
+    queryKey: ["schoolYears"],
+    queryFn: () => base44.entities.SchoolYear.list("-created_date"),
+  });
+  const activeYear = schoolYears.find((y) => y.is_active);
+
+  const { data: sections = [] } = useQuery({
+    queryKey: ["sections", activeYear?.id],
+    queryFn: () =>
+      activeYear?.id ? base44.entities.Section.filter({ school_year_id: activeYear.id }) : base44.entities.Section.list(),
+  });
 
   const { data: student, isLoading } = useQuery({
     queryKey: ["student", id],
-    queryFn: () => base44.entities.Student.filter({ id }),
-    select: (data) => data[0],
+    queryFn: () => base44.entities.Student.get(id),
+    enabled: !!id,
+  });
+
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ["enrollments", "student", id],
+    queryFn: () => base44.entities.Enrollment.filter({ student_id: id, limit: 100 }),
+    enabled: !!id,
+  });
+
+  const updateStudentMutation = useMutation({
+    mutationFn: ({ sid, data }) => base44.entities.Student.update(sid, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["student", id] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      setShowEditForm(false);
+      toast.success("Student updated");
+    },
+    onError: (e) => toast.error(extractApiError(e)),
+  });
+
+  const deleteStudentMutation = useMutation({
+    mutationFn: (sid) => base44.entities.Student.delete(sid),
+    onSuccess: () => {
+      toast.success("Student removed");
+      router.visit("/Students");
+    },
+    onError: (e) => toast.error(extractApiError(e)),
   });
 
   const { data: grades = [] } = useQuery({
@@ -99,8 +155,10 @@ export default function StudentProfile() {
   });
 
   // Attendance summary
-  const attSummary = { present: 0, absent: 0, late: 0, excused: 0 };
-  attendance.forEach(a => { if (attSummary[a.status] !== undefined) attSummary[a.status]++; });
+  const attSummary = { present: 0, absent: 0, late: 0, excused: 0, half_day: 0 };
+  attendance.forEach(a => {
+    if (attSummary[a.status] !== undefined) attSummary[a.status]++;
+  });
   const totalDays = attendance.length;
   const absenceRate = totalDays ? Math.round((attSummary.absent / totalDays) * 100) : 0;
 
@@ -114,10 +172,21 @@ export default function StudentProfile() {
 
   return (
     <div className="space-y-5">
-      {/* Back */}
-      <Button variant="ghost" size="sm" asChild className="text-slate-500 hover:text-slate-700 -ml-2">
-        <Link href="/Students"><ArrowLeft className="w-4 h-4 mr-1" /> Back to Students</Link>
-      </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" asChild className="text-slate-500 hover:text-slate-700 -ml-2">
+          <Link href="/Students">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Students
+          </Link>
+        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setShowEditForm(true)}>
+            <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+          </Button>
+          <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => setShowDeleteStudent(true)}>
+            <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+          </Button>
+        </div>
+      </div>
 
       {/* Profile Header */}
       <Card className="border-0 shadow-sm">
@@ -198,6 +267,7 @@ export default function StudentProfile() {
       <Tabs defaultValue="grades">
         <TabsList className="mb-4 flex-wrap h-auto gap-1">
           <TabsTrigger value="grades"><BookOpen className="w-3.5 h-3.5 mr-1" />Grades</TabsTrigger>
+          <TabsTrigger value="enrollments"><GraduationCap className="w-3.5 h-3.5 mr-1" />Enrollments</TabsTrigger>
           <TabsTrigger value="attendance"><ClipboardCheck className="w-3.5 h-3.5 mr-1" />Attendance</TabsTrigger>
           <TabsTrigger value="health"><HeartPulse className="w-3.5 h-3.5 mr-1" />Health</TabsTrigger>
           <TabsTrigger value="violations"><AlertTriangle className="w-3.5 h-3.5 mr-1" />Violations</TabsTrigger>
@@ -248,6 +318,49 @@ export default function StudentProfile() {
                   </Table>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="enrollments">
+          <Card className="border-0 shadow-sm">
+            <CardHeader><CardTitle className="text-sm">School-year enrollment records</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              {enrollments.length === 0 ? (
+                <div className="text-center py-10 text-slate-400 text-sm">No enrollment rows.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50">
+                        <TableHead className="text-xs">School year</TableHead>
+                        <TableHead className="text-xs">Grade</TableHead>
+                        <TableHead className="text-xs">Section</TableHead>
+                        <TableHead className="text-xs">Type</TableHead>
+                        <TableHead className="text-xs">Status</TableHead>
+                        <TableHead className="text-xs">Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...enrollments].sort((a, b) => String(b.enrollment_date).localeCompare(String(a.enrollment_date))).map((e) => (
+                        <TableRow key={e.id}>
+                          <TableCell className="text-xs font-medium">{e.school_year?.label ?? e.school_year_id}</TableCell>
+                          <TableCell className="text-xs">{e.grade_level?.name ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{e.section?.name ?? "—"}</TableCell>
+                          <TableCell className="text-xs capitalize">{(e.enrollment_type ?? "").replace(/_/g, " ") || "—"}</TableCell>
+                          <TableCell><Badge className={statusColors[e.status] || "bg-slate-100 text-slate-600"}>{e.status}</Badge></TableCell>
+                          <TableCell className="text-xs">{e.enrollment_date}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              <div className="px-4 py-3 border-t bg-slate-50/80">
+                <Button variant="link" className="text-[#1e3a5f] h-auto p-0" asChild>
+                  <Link href="/Enrollment">Manage enrollments →</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -423,6 +536,31 @@ export default function StudentProfile() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <StudentForm
+        open={showEditForm}
+        onClose={() => setShowEditForm(false)}
+        onSubmit={(payload) => updateStudentMutation.mutate({ sid: student.id, data: payload })}
+        student={student}
+        sections={sections}
+      />
+
+      <AlertDialog open={showDeleteStudent} onOpenChange={setShowDeleteStudent}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this student?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This archives the learner profile and related access. Enrollment rows may need cleanup separately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteStudentMutation.mutate(student.id)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -2,9 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\Enrollment;
 use App\Models\GradeLevel;
+use App\Models\ParentGuardian;
 use App\Models\Quarter;
 use App\Models\SchoolYear;
+use App\Models\Section;
+use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -41,6 +45,18 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $faculty->syncRoles(['faculty']);
+
+        $schoolAdmin = User::firstOrCreate(
+            ['email' => 'schooladmin@talais.test'],
+            [
+                'name' => 'Sample School Admin',
+                'password' => Hash::make('password'),
+                'role' => 'school_admin',
+                'status' => 'active',
+                'email_verified_at' => now(),
+            ]
+        );
+        $schoolAdmin->syncRoles(['school_admin']);
 
         $parent = User::firstOrCreate(
             ['email' => 'parent@talais.test'],
@@ -113,6 +129,66 @@ class DatabaseSeeder extends Seeder
         ];
         foreach ($subjects as $s) {
             Subject::firstOrCreate(['code' => $s['code']], $s);
+        }
+
+        $g1 = GradeLevel::where('name', 'Grade 1')->first();
+        if ($g1) {
+            $guardian = ParentGuardian::firstOrCreate(
+                ['user_id' => $parent->id],
+                [
+                    'first_name' => 'Sample',
+                    'middle_name' => '',
+                    'last_name' => 'Parent',
+                    'relationship' => 'Mother',
+                    'contact_number' => '09171234567',
+                    'email' => 'parent@talais.test',
+                ]
+            );
+
+            $section = Section::firstOrCreate(
+                [
+                    'school_year_id' => $sy->id,
+                    'grade_level_id' => $g1->id,
+                    'name' => 'Rizal',
+                ],
+                [
+                    'type' => 'regular',
+                    'session' => 'whole_day',
+                    'adviser_id' => $faculty->id,
+                    'max_capacity' => 40,
+                ]
+            );
+
+            $demoStudent = Student::firstOrCreate(
+                ['lrn' => '136012345678'],
+                [
+                    'first_name' => 'Juan',
+                    'middle_name' => '',
+                    'last_name' => 'Dela Cruz',
+                    'birth_date' => '2017-03-15',
+                    'gender' => 'Male',
+                    'status' => 'enrolled',
+                ]
+            );
+
+            Enrollment::firstOrCreate(
+                [
+                    'student_id' => $demoStudent->id,
+                    'school_year_id' => $sy->id,
+                ],
+                [
+                    'grade_level_id' => $g1->id,
+                    'section_id' => $section->id,
+                    'enrollment_date' => now()->toDateString(),
+                    'enrollment_type' => 'new',
+                    'status' => 'enrolled',
+                    'enrolled_by' => $admin->id,
+                ]
+            );
+
+            if (! $guardian->students()->where('students.id', $demoStudent->id)->exists()) {
+                $guardian->students()->attach($demoStudent->id, ['is_primary' => true]);
+            }
         }
     }
 }
