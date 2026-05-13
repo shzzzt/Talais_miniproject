@@ -114,6 +114,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('grade-reviews', GradeReviewController::class);
 
     Route::middleware(['role:parent', 'parent.scope'])->group(function () {
+        Route::post('parent/register-student', [ParentController::class, 'registerStudent'])->name('parent.register-student');
         Route::get('parent-portal', ParentPortalController::class)->name('parent-portal.index');
     });
 

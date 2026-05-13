@@ -25,8 +25,8 @@ import { http } from '@/lib/api';
 import { base44 } from '@/lib/api';
 import { toast } from 'sonner';
 import { extractApiError } from '@/lib/utils';
-import { usePage } from '@inertiajs/react';
-import { UserRound, GraduationCap } from 'lucide-react';
+import { usePage, Link } from '@inertiajs/react';
+import { UserRound, GraduationCap, UserPlus } from 'lucide-react';
 import React from 'react';
 
 export default function ParentEnrollment() {
@@ -52,6 +52,7 @@ export default function ParentEnrollment() {
   const activeYearShared = props?.active_school_year;
   const [formOpen, setFormOpen] = React.useState(false);
   const [selectedStudentId, setSelectedStudentId] = React.useState(null);
+
   const [form, setForm] = React.useState({
     school_year_id: '',
     grade_level_id: '',
@@ -105,6 +106,12 @@ export default function ParentEnrollment() {
   });
 
   const openForStudent = (row) => {
+    // Prevent opening if enrollment is already submitted
+    if (row.enrollment_for_active_year?.grade_level) {
+      toast.error('This enrollment has been submitted and cannot be modified.');
+      return;
+    }
+
     const syId =
       data?.active_school_year?.id ||
       activeYearShared?.id ||
@@ -178,10 +185,18 @@ export default function ParentEnrollment() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="School enrollment"
-        description="Complete grade and section assignments for each learner registered under your guardian profile. Names and demographics were captured during online registration."
-      />
+      <div className="flex items-center justify-between">
+        <PageHeader
+          title="School enrollment"
+          description="Complete grade and section assignments for each learner registered under your guardian profile. Names and demographics were captured during online registration."
+        />
+        <Link href="/ParentEnrollStudent">
+          <Button className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Enroll Student
+          </Button>
+        </Link>
+      </div>
 
       {flashSuccess && (
         <Card className="border-emerald-200 bg-emerald-50 shadow-none">
@@ -229,7 +244,8 @@ export default function ParentEnrollment() {
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold">Learner</th>
                   <th className="text-left px-4 py-3 font-semibold">Demographics</th>
-                  <th className="text-left px-4 py-3 font-semibold">School setup</th>
+                  <th className="text-left px-4 py-3 font-semibold">Grade level</th>
+                  <th className="text-left px-4 py-3 font-semibold">Enrollment Status</th>
                   <th className="text-right px-4 py-3 font-semibold">Action</th>
                 </tr>
               </thead>
@@ -256,24 +272,26 @@ export default function ParentEnrollment() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-600 text-xs">{meta.filter(Boolean).join(' · ')}</td>
-                      <td className="px-4 py-3 text-xs text-slate-700">
+                      <td className="px-4 py-3 text-xs text-slate-700 font-medium">
+                        {enroll?.grade_level ? enroll.grade_level : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
                         {enroll?.grade_level && (
-                          <div>
-                            {enroll.grade_level}{enroll.section ? ` · Section ${enroll.section}` : ''}{' '}
-                            <Badge className="ml-1">{enroll.enrollment_type}</Badge>
-                          </div>
+                          <Badge className="bg-emerald-100 text-emerald-800">Submitted</Badge>
                         )}
                         {!enroll?.grade_level && needs && (
-                          <Badge className="bg-amber-100 text-amber-800">{statusLabel}</Badge>
+                          <Badge className="bg-amber-100 text-amber-800">Awaiting submission</Badge>
                         )}
                         {!enroll?.grade_level && !needs && (
-                          <Badge variant="secondary">Other year on file—select school year manually</Badge>
+                          <Badge variant="secondary">Other year on file</Badge>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button size="sm" variant="outline" onClick={() => openForStudent(row)}>
-                          {enroll?.grade_level ? 'Update enrollment' : 'Add school enrollment'}
-                        </Button>
+                        <Link href="/ParentPortal">
+                          <Button size="sm" variant="outline">
+                            View
+                          </Button>
+                        </Link>
                       </td>
                     </tr>
                   );

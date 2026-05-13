@@ -79,7 +79,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(['role:parent', 'parent.scope'])->group(function () {
+        Route::get('/ParentHome', fn () => Inertia::render('ParentHome'))->name('parent-home.index');
         Route::get('/ParentPortal', fn () => Inertia::render('ParentPortal'))->name('parent-portal.index');
+        Route::get('/ParentEnrollment', fn () => Inertia::render('ParentEnrollment'))->name('parent-enrollment.index');
+        Route::get('/ParentEnrollStudent', fn () => Inertia::render('ParentEnrollStudent'))->name('parent-enroll-student.index');
     });
 });
 

@@ -39,8 +39,8 @@ const NAV_FACULTY = [
 ];
 
 const NAV_PARENT = [
-  { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
-  { name: "Parent Portal", icon: User, page: "ParentPortal" },
+  { name: "Home", icon: LayoutDashboard, page: "ParentHome" },
+  { name: "Enrollment", icon: UserPlus, page: "ParentEnrollment" },
 ];
 
 const NAV_SCHOOL_ADMIN = [
@@ -51,7 +51,7 @@ const NAV_SCHOOL_ADMIN = [
       { name: "Teachers", page: "FacultyManagement" },
       { name: "Sections", page: "Sections" },
       { name: "Subjects", page: "Subjects" },
-      { name: "Departments (Grades 4–6)", page: "Departments" },
+      { name: "Departments", page: "Departments" },
       { name: "Enroll students", page: "Enrollment" },
     ]
   },
