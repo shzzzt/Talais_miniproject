@@ -14,9 +14,7 @@ use Inertia\Response;
 
 class TwoFactorChallengeController extends Controller
 {
-    public function __construct(private readonly TwoFactorService $twoFactor)
-    {
-    }
+    public function __construct(private readonly TwoFactorService $twoFactor) {}
 
     public function show(Request $request): Response|RedirectResponse
     {
@@ -26,8 +24,17 @@ class TwoFactorChallengeController extends Controller
         }
 
         return Inertia::render('Auth/TwoFactorChallenge', [
-            'email' => User::find($userId)?->email,
+            'contactHint' => $this->contactHintForUser(User::find($userId)),
         ]);
+    }
+
+    private function contactHintForUser(?User $user): ?string
+    {
+        if (! $user) {
+            return null;
+        }
+
+        return $user->email ?? $user->phone_number;
     }
 
     public function resend(Request $request): RedirectResponse

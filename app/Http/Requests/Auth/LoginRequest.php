@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Support\PhoneNumber;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 class LoginRequest extends FormRequest
 {
     public const MAX_FAILED_ATTEMPTS = 5;
+
     public const LOCKOUT_MINUTES = 15;
 
     public function authorize(): bool
@@ -29,7 +31,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'login' => ['required', 'string', 'max:191'],
             'password' => ['required', 'string'],
         ];
     }
@@ -46,28 +48,28 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $user = User::withTrashed()->where('email', $this->string('email'))->first();
+        $user = $this->findUserByLoginIdentifier(trim((string) $this->input('login', '')));
 
         if ($user && $user->trashed()) {
             throw ValidationException::withMessages([
-                'email' => 'This account has been deactivated. Contact the administrator.',
+                'login' => 'This account has been deactivated. Contact the administrator.',
             ]);
         }
 
         if ($user && $user->isLocked()) {
             $minutes = max(1, $user->locked_until->diffInMinutes(now()));
             throw ValidationException::withMessages([
-                'email' => "Account locked. Try again in {$minutes} minute(s).",
+                'login' => "Account locked. Try again in {$minutes} minute(s).",
             ]);
         }
 
         if ($user && $user->status !== 'active') {
             throw ValidationException::withMessages([
-                'email' => 'This account is not active. Contact the administrator.',
+                'login' => 'This account is not active. Contact the administrator.',
             ]);
         }
 
-        if (! $user || ! Hash::check($this->string('password'), $user->password)) {
+        if (! $user || ! Hash::check((string) $this->input('password'), $user->password)) {
             if ($user) {
                 $user->forceFill([
                     'failed_login_count' => $user->failed_login_count + 1,
@@ -83,7 +85,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'login' => trans('auth.failed'),
             ]);
         }
 
@@ -113,7 +115,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            'login' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -122,6 +124,26 @@ class LoginRequest extends FormRequest
 
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('login')).'|'.$this->ip());
+    }
+
+    private function findUserByLoginIdentifier(string $raw): ?User
+    {
+        if ($raw === '') {
+            return null;
+        }
+
+        if (filter_var($raw, FILTER_VALIDATE_EMAIL)) {
+            return User::withTrashed()
+                ->where('email', strtolower($raw))
+                ->first();
+        }
+
+        $phone = PhoneNumber::normalize($raw);
+        if ($phone) {
+            return User::withTrashed()->where('phone_number', $phone)->first();
+        }
+
+        return User::withTrashed()->where('email', $raw)->first();
     }
 }

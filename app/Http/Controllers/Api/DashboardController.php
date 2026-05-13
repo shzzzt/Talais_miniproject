@@ -18,7 +18,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Spatie\Activitylog\Models\Activity;
 
 class DashboardController extends Controller
@@ -28,14 +27,14 @@ class DashboardController extends Controller
         $activeYear = SchoolYear::active() ?? SchoolYear::orderByDesc('id')->first();
         $yearId = $request->integer('school_year_id') ?: $activeYear?->id;
 
-        $enrollmentQuery = Enrollment::query()->when($yearId, fn($q) => $q->where('school_year_id', $yearId));
+        $enrollmentQuery = Enrollment::query()->when($yearId, fn ($q) => $q->where('school_year_id', $yearId));
 
         $enrolled = (clone $enrollmentQuery)->where('status', 'enrolled')->count();
         $transferred = (clone $enrollmentQuery)->whereIn('status', ['transferred_out', 'transferred'])->count();
         $dropped = (clone $enrollmentQuery)->where('status', 'dropped')->count();
 
         $sectionsCount = Section::query()
-            ->when($yearId, fn($q) => $q->where('school_year_id', $yearId))
+            ->when($yearId, fn ($q) => $q->where('school_year_id', $yearId))
             ->count();
 
         $uniqueParents = ParentGuardian::query()->count();
@@ -48,7 +47,7 @@ class DashboardController extends Controller
             ->pluck('total', 'grade_level_id');
 
         $gradeLevels = GradeLevel::orderBy('id')->get(['id', 'name']);
-        $byGradeLabeled = $gradeLevels->map(fn($g) => [
+        $byGradeLabeled = $gradeLevels->map(fn ($g) => [
             'grade_level_id' => $g->id,
             'grade_level' => $g->name,
             'count' => (int) ($byGrade[$g->id] ?? 0),
@@ -64,7 +63,7 @@ class DashboardController extends Controller
         $today = now()->toDateString();
         $todayAttendance = AttendanceRecord::whereDate('date', $today)
             ->when($yearId, function ($q) use ($yearId) {
-                $q->whereHas('enrollment', fn($e) => $e->where('school_year_id', $yearId));
+                $q->whereHas('enrollment', fn ($e) => $e->where('school_year_id', $yearId));
             })
             ->selectRaw("\n                count(*) as total,\n                sum(case when am_status = 'present' or pm_status = 'present' then 1 else 0 end) as present_count,\n                sum(case when am_status = 'absent' or pm_status = 'absent' then 1 else 0 end) as absent_count,\n                sum(case when am_status = 'late' or pm_status = 'late' then 1 else 0 end) as late_count\n            ")
             ->first();
@@ -109,13 +108,13 @@ class DashboardController extends Controller
             ->select('students.gender', DB::raw('count(*) as total'))
             ->join('enrollments', 'students.id', '=', 'enrollments.student_id')
             ->where('enrollments.status', 'enrolled')
-            ->when($yearId, fn($q) => $q->where('enrollments.school_year_id', $yearId))
+            ->when($yearId, fn ($q) => $q->where('enrollments.school_year_id', $yearId))
             ->groupBy('students.gender')
             ->pluck('total', 'gender');
 
         $passFail = DB::table('student_grades')
             ->join('enrollments', 'student_grades.enrollment_id', '=', 'enrollments.id')
-            ->when($yearId, fn($q) => $q->where('enrollments.school_year_id', $yearId))
+            ->when($yearId, fn ($q) => $q->where('enrollments.school_year_id', $yearId))
             ->whereNotNull('quarterly_grade')
             ->selectRaw("\n                count(*) as total,\n                sum(case when quarterly_grade >= ? then 1 else 0 end) as passing,\n                sum(case when quarterly_grade < ? then 1 else 0 end) as failing\n            ", [$passingMark, $passingMark])
             ->first();
@@ -123,7 +122,7 @@ class DashboardController extends Controller
         $gradeAverages = DB::table('student_grades')
             ->join('enrollments', 'student_grades.enrollment_id', '=', 'enrollments.id')
             ->join('grade_levels', 'enrollments.grade_level_id', '=', 'grade_levels.id')
-            ->when($yearId, fn($q) => $q->where('enrollments.school_year_id', $yearId))
+            ->when($yearId, fn ($q) => $q->where('enrollments.school_year_id', $yearId))
             ->whereNotNull('quarterly_grade')
             ->select('grade_levels.id', 'grade_levels.name', DB::raw('avg(quarterly_grade) as average_grade'))
             ->groupBy('grade_levels.id', 'grade_levels.name')
@@ -132,7 +131,7 @@ class DashboardController extends Controller
 
         $attendanceByMonth = DB::table('attendance_records')
             ->join('enrollments', 'attendance_records.enrollment_id', '=', 'enrollments.id')
-            ->when($yearId, fn($q) => $q->where('enrollments.school_year_id', $yearId))
+            ->when($yearId, fn ($q) => $q->where('enrollments.school_year_id', $yearId))
             ->selectRaw("\n                to_char(date, 'YYYY-MM') as month,\n                count(*) as total,\n                sum(case when am_status = 'absent' or pm_status = 'absent' then 1 else 0 end) as absences\n            ")
             ->groupBy('month')
             ->orderBy('month')
@@ -190,7 +189,7 @@ class DashboardController extends Controller
         for ($i = 11; $i >= 0; $i--) {
             $w = now()->subWeeks($i)->startOfWeek();
             $key = $w->format('Y-m-d');
-            $weekly[] = ['label' => 'Wk ' . $w->format('W'), 'count' => (int) ($weeklyRaw[$key] ?? 0)];
+            $weekly[] = ['label' => 'Wk '.$w->format('W'), 'count' => (int) ($weeklyRaw[$key] ?? 0)];
         }
 
         $monthlyRaw = (clone $txBase)
@@ -210,7 +209,7 @@ class DashboardController extends Controller
             ->latest('created_at')
             ->limit(15)
             ->get()
-            ->map(fn($a) => [
+            ->map(fn ($a) => [
                 'id' => $a->id,
                 'description' => $a->description,
                 'event' => $a->event,
@@ -286,17 +285,20 @@ class DashboardController extends Controller
 
         try {
             if ($driver === 'pgsql') {
-                $row = DB::selectOne("select pg_database_size(current_database()) as size");
+                $row = DB::selectOne('select pg_database_size(current_database()) as size');
+
                 return round(((float) ($row->size ?? 0)) / 1024 / 1024, 2);
             }
 
             if ($driver === 'mysql') {
                 $row = DB::selectOne('select sum(data_length + index_length) as size from information_schema.tables where table_schema = database()');
+
                 return round(((float) ($row->size ?? 0)) / 1024 / 1024, 2);
             }
 
             if ($driver === 'sqlite') {
                 $path = DB::connection()->getDatabaseName();
+
                 return file_exists($path) ? round(filesize($path) / 1024 / 1024, 2) : 0.0;
             }
         } catch (\Throwable) {

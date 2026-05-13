@@ -71,6 +71,13 @@ class ParentController extends Controller
             'contact_number' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:191'],
             'address' => ['nullable', 'string', 'max:500'],
+            'mother_tongue' => ['nullable', 'string', 'max:80'],
+            'ip_ethnic_group' => ['nullable', 'string', 'max:80'],
+            'religion' => ['nullable', 'string', 'max:80'],
+            'house_street_sitio' => ['nullable', 'string', 'max:150'],
+            'barangay' => ['nullable', 'string', 'max:80'],
+            'municipality_city' => ['nullable', 'string', 'max:80'],
+            'province' => ['nullable', 'string', 'max:80'],
         ];
     }
 }

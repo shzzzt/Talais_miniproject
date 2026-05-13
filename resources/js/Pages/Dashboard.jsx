@@ -33,6 +33,8 @@ export default function Dashboard() {
   const isAdmin = user?.role === 'admin';
   const isSchoolAdmin = user?.role === 'school_admin';
 
+  const isFaculty = user?.role === 'faculty';
+
   const { data: summary, isLoading } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: async () => {
@@ -70,6 +72,7 @@ export default function Dashboard() {
   }));
   const schoolQuickActions = [
     { label: 'Students', href: '/Students' },
+    { label: 'Teachers', href: '/FacultyManagement' },
     { label: 'Sections', href: '/Sections' },
     { label: 'Subjects', href: '/Subjects' },
     { label: 'Enroll Students', href: '/Enrollment' },
@@ -78,13 +81,21 @@ export default function Dashboard() {
     { label: 'Form 137', href: '/Form137' },
     { label: 'Reports', href: '/Reports' },
     { label: 'Analytics', href: '/Analytics' },
-    { label: 'School Year Settings', href: '/SchoolYears' },
     { label: 'User Management', href: '/UserManagement' },
     { label: 'System Management', href: '/AdminSettings' },
   ];
 
   return (
     <div className="space-y-6">
+      {isAdmin && (
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Comprehensive Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            System health, activity, user statistics, quick actions, and recent events
+          </p>
+        </div>
+      )}
+
       {activeYear && (
         <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2c5282] rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between">
@@ -314,10 +325,72 @@ export default function Dashboard() {
         </>
       )}
 
-      {!isAdmin && !isSchoolAdmin && (
+      {isFaculty && !isAdmin && !isSchoolAdmin && (
+        <>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Faculty Dashboard</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              {user?.is_grade_level_head && user?.grade_level_head_label
+                ? `Grade level head for ${user.grade_level_head_label} — extra tools appear in the sidebar.`
+                : 'My classes, attendance, schedule, health records, and violations.'}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard title="Enrolled (active year)" value={schoolTotals.enrolled ?? '—'} icon={Users} color="blue" subtitle="School-wide" />
+            <StatCard title="Sections" value={schoolTotals.sections ?? '—'} icon={BookOpen} color="purple" />
+            <StatCard title="Today&apos;s attendance rows" value={attendance.total ?? 0} icon={ClipboardCheck} color="amber" />
+            <StatCard title="Feeding program" value={schoolTotals.feeding_program ?? 0} icon={UserCheck} color="green" />
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-slate-700">Quick actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Link href="/Grading" className="block text-sm p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700">My classes (Grading)</Link>
+                <Link href="/Attendance" className="block text-sm p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700">Attendance</Link>
+                <Link href="/Scheduling" className="block text-sm p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700">My schedule</Link>
+                <Link href="/Violations" className="block text-sm p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700">Violations</Link>
+              </CardContent>
+            </Card>
+            {user?.is_grade_level_head && (
+              <Card className="border-0 shadow-sm border-l-4 border-l-cyan-500">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold text-slate-700">Grade level head tools</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Link href="/SectionAssignment" className="block text-sm p-2.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-900">Section assignment</Link>
+                  <Link href="/Scheduling" className="block text-sm p-2.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-900">Create / edit class schedules</Link>
+                  <Link href="/Analytics" className="block text-sm p-2.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-900">Analytics</Link>
+                  <Link href="/Reports" className="block text-sm p-2.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-900">Reports &amp; exports</Link>
+                  <Link href="/Form137" className="block text-sm p-2.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-900">Form 137</Link>
+                  <p className="text-xs text-slate-500 pt-2">
+                    Promoting students (changing grade on enrollment) is done from the enrollment workflow you already use.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </>
+      )}
+
+      {user?.role === 'parent' && (
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-700">Guardian home</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Link href="/ParentPortal" className="block text-sm p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700">
+              Parent portal
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isAdmin && !isSchoolAdmin && !isFaculty && user?.role !== 'parent' && (
         <Card className="border-0 shadow-sm">
           <CardContent className="py-10 text-center text-sm text-slate-500">
-            Dashboard widgets are available to system administrators.
+            No dashboard widgets are configured for this role.
           </CardContent>
         </Card>
       )}

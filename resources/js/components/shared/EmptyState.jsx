@@ -8,7 +8,7 @@ export default function EmptyState({ icon: Icon = Inbox, title = "No data yet", 
         <Icon className="w-7 h-7 text-slate-400" />
       </div>
       <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
-      {description && <p className="text-sm text-slate-400 mt-1 max-w-sm">{description}</p>}
+      {description && <div className="text-sm text-slate-400 mt-1 max-w-md">{description}</div>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

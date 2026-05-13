@@ -6,7 +6,8 @@ import {
   LayoutDashboard, Users, ClipboardCheck, BookOpen,
   FileText, HeartPulse, Calendar, Menu, Bell, LogOut,
   GraduationCap, ChevronDown, ChevronRight, BarChart3,
-  AlertTriangle, Settings, Shield, Clock, User, ArrowRightLeft, TrendingUp, Files, Database, Activity, UserPlus
+  AlertTriangle, Settings, Clock, User, Files, Database, Activity, UserPlus,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/roles";
@@ -47,13 +48,22 @@ const NAV_SCHOOL_ADMIN = [
   {
     name: "Enrollment", icon: UserPlus, children: [
       { name: "Students", page: "Students" },
+      { name: "Teachers", page: "FacultyManagement" },
       { name: "Sections", page: "Sections" },
       { name: "Subjects", page: "Subjects" },
+      { name: "Departments (Grades 4–6)", page: "Departments" },
       { name: "Enroll students", page: "Enrollment" },
     ]
   },
   { name: "Scheduling", icon: Clock, page: "Scheduling" },
   { name: "Violations", icon: AlertTriangle, page: "Violations" },
+  { name: "Form 137", icon: FileText, page: "Form137" },
+  { name: "Reports (PDF/Excel)", icon: Files, page: "Reports" },
+  { name: "Analytics", icon: BarChart3, page: "Analytics" },
+];
+
+const NAV_FACULTY_HEAD_EXTRA = [
+  { name: "Section assignment", icon: LayoutGrid, page: "SectionAssignment" },
   { name: "Form 137", icon: FileText, page: "Form137" },
   { name: "Reports (PDF/Excel)", icon: Files, page: "Reports" },
   { name: "Analytics", icon: BarChart3, page: "Analytics" },
@@ -88,7 +98,11 @@ export default function AppLayout({ children, currentPageName }) {
 
   if (!user) return null;
 
-  const navItems = ROLE_NAV[user.role] || NAV_FACULTY;
+  let navItems = ROLE_NAV[user.role] || NAV_FACULTY;
+  if (user.role === "faculty" && user.is_grade_level_head) {
+    navItems = [...NAV_FACULTY, ...NAV_FACULTY_HEAD_EXTRA];
+  }
+
   const isActive = (page) => currentPageName === page;
 
   const toggleExpand = (name) => {
@@ -143,9 +157,16 @@ export default function AppLayout({ children, currentPageName }) {
         </div>
 
         <div className="px-5 py-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className={cn("w-2 h-2 rounded-full", ROLE_COLORS[user.role] ?? ROLE_COLORS.faculty)} />
-            <span className="text-xs text-white/60">{ROLE_LABELS[user.role] ?? user.role}</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <div className={cn("w-2 h-2 rounded-full", ROLE_COLORS[user.role] ?? ROLE_COLORS.faculty)} />
+              <span className="text-xs text-white/60">{ROLE_LABELS[user.role] ?? user.role}</span>
+            </div>
+            {user.role === "faculty" && user.is_grade_level_head && user.grade_level_head_label && (
+              <p className="text-[10px] text-cyan-200/90 pl-4">
+                Grade level head · {user.grade_level_head_label}
+              </p>
+            )}
           </div>
         </div>
 

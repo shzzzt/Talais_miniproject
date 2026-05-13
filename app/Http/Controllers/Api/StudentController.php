@@ -12,9 +12,7 @@ use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
-    public function __construct(private readonly StudentEnrollmentService $service)
-    {
-    }
+    public function __construct(private readonly StudentEnrollmentService $service) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -123,7 +121,7 @@ class StudentController extends Controller
             'ip_ethnic_group' => ['nullable', 'string', 'max:80'],
             'religion' => ['nullable', 'string', 'max:80'],
             'birth_certificate_path' => ['nullable', 'string', 'max:500'],
-            'status' => ['nullable', Rule::in(['enrolled', 'transferred_out', 'dropped', 'completed', 'alumni', 'transferred_in', 'graduated'])],
+            'status' => ['nullable', Rule::in(['enrolled', 'transferred_out', 'dropped', 'completed', 'alumni', 'transferred_in', 'graduated', 'pending_enrollment'])],
 
             'parent_name' => ['nullable', 'string', 'max:255'],
             'parent_contact' => ['nullable', 'string', 'max:30'],

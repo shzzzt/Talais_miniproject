@@ -36,8 +36,43 @@ export default function Scheduling() {
   const [form, setForm] = useState(initialForm);
 
   const { data: sections = [] } = useQuery({ queryKey: ["sections"], queryFn: () => base44.entities.Section.list() });
-  const { data: subjects = [] } = useQuery({ queryKey: ["subjects"], queryFn: () => base44.entities.Subject.list() });
+  
+  // Get the selected section object to find its grade level
+  const selectedSectionObj = sections.find(s => String(s.id) === form.section_id);
+  const selectedGradeLevel = selectedSectionObj?.grade_level;
+  const selectedGradeLevelId = selectedSectionObj?.grade_level_id;
+  
+  // Fetch subjects filtered by the selected section's grade level
+  const { data: subjects = [], isFetching: isFetchingSubjects } = useQuery({
+    queryKey: ["subjects-by-grade", selectedGradeLevelId],
+    queryFn: async () => {
+      if (!selectedGradeLevelId) {
+        return []; // Return empty array if no grade level selected
+      }
+      try {
+        const result = await base44.entities.Subject.filter({ primary_grade_level_id: selectedGradeLevelId });
+        return Array.isArray(result) ? result : (result?.data ?? []);
+      } catch (err) {
+        console.error('Error fetching subjects:', err);
+        return [];
+      }
+    },
+    enabled: !!selectedGradeLevelId, // Only enable when grade level is available
+    staleTime: 0, // Don't cache
+    gcTime: 0, // Don't cache
+  });
+  
+  const selectedSubjectObj = subjects.find(s => String(s.id) === form.subject_id);
+  const selectedSubjectDepartmentId = selectedSubjectObj?.department_id ?? null;
   const { data: faculty = [] } = useQuery({ queryKey: ["faculty"], queryFn: () => base44.entities.Faculty.list() });
+  const filteredFaculty = form.subject_id
+    ? faculty.filter(f => {
+        const facultyDepartmentId = f.department_id ?? f.department?.id ?? null;
+        return selectedSubjectDepartmentId
+          ? Number(facultyDepartmentId) === Number(selectedSubjectDepartmentId)
+          : facultyDepartmentId === null || facultyDepartmentId === "";
+      })
+    : [];
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ["class-schedules"],
     queryFn: () => base44.entities.ClassSchedule.list(),
@@ -175,7 +210,7 @@ export default function Scheduling() {
           <div className="space-y-4">
             <div>
               <Label>Section</Label>
-              <Select value={form.section_id} onValueChange={v => setForm({ ...form, section_id: v })}>
+              <Select value={form.section_id} onValueChange={v => setForm({ ...form, section_id: v, subject_id: "", faculty_id: "" })}>
                 <SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger>
                 <SelectContent>
                   {sections.map(s => (
@@ -185,22 +220,32 @@ export default function Scheduling() {
               </Select>
             </div>
             <div>
-              <Label>Subject</Label>
-              <Select value={form.subject_id} onValueChange={v => setForm({ ...form, subject_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+              <Label>Subject {selectedGradeLevel && <span className="text-xs text-slate-500">({selectedGradeLevel})</span>}</Label>
+              <Select value={form.subject_id} onValueChange={v => setForm({ ...form, subject_id: v, faculty_id: "" })} disabled={!form.section_id || isFetchingSubjects || subjects.length === 0}>
+                <SelectTrigger><SelectValue placeholder={form.section_id ? (isFetchingSubjects ? "Loading subjects..." : "Select subject") : "Select a section first"} /></SelectTrigger>
                 <SelectContent>
-                  {subjects.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                  {isFetchingSubjects ? (
+                    <div className="p-2 text-sm text-slate-500">Loading subjects...</div>
+                  ) : subjects.length === 0 ? (
+                    <div className="p-2 text-sm text-slate-500">No subjects for this grade level</div>
+                  ) : (
+                    subjects.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)
+                  )}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Teacher</Label>
-              <Select value={form.faculty_id} onValueChange={v => setForm({ ...form, faculty_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Select faculty (optional)" /></SelectTrigger>
+              <Select value={form.faculty_id} onValueChange={v => setForm({ ...form, faculty_id: v })} disabled={!form.subject_id || filteredFaculty.length === 0}>
+                <SelectTrigger><SelectValue placeholder={form.subject_id ? "Select faculty (optional)" : "Select a subject first"} /></SelectTrigger>
                 <SelectContent>
-                  {faculty.map(f => (
-                    <SelectItem key={f.id} value={String(f.id)}>{f.first_name} {f.last_name}</SelectItem>
-                  ))}
+                  {filteredFaculty.length === 0 ? (
+                    <div className="p-2 text-sm text-slate-500">No matching teachers</div>
+                  ) : (
+                    filteredFaculty.map(f => (
+                      <SelectItem key={f.id} value={String(f.id)}>{f.first_name} {f.last_name}</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

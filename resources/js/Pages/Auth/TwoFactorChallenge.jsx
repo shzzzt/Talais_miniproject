@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default function TwoFactorChallenge({ email, status }) {
+export default function TwoFactorChallenge({ contactHint, status }) {
     const { data, setData, post, processing, errors, reset } = useForm({ code: '' });
 
     const submit = (e) => {
@@ -20,6 +20,12 @@ export default function TwoFactorChallenge({ email, status }) {
         post('/two-factor-challenge/cancel');
     };
 
+    const destination = contactHint ? (
+        <span className="font-semibold text-slate-700">{contactHint}</span>
+    ) : (
+        <span className="font-semibold text-slate-700">your account</span>
+    );
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
             <Head title="Two-Factor Verification" />
@@ -28,8 +34,7 @@ export default function TwoFactorChallenge({ email, status }) {
                     <div className="text-center space-y-1">
                         <h1 className="text-2xl font-black text-[#1e3a5f]">Verify Your Identity</h1>
                         <p className="text-sm text-slate-500">
-                            We emailed a 6-digit code to{' '}
-                            <span className="font-semibold text-slate-700">{email}</span>.
+                            We sent a 6-digit verification code to {destination}.
                         </p>
                     </div>
 
@@ -65,10 +70,10 @@ export default function TwoFactorChallenge({ email, status }) {
                     </form>
 
                     <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
-                        <button onClick={resend} className="hover:underline">
+                        <button type="button" onClick={resend} className="hover:underline">
                             Resend code
                         </button>
-                        <button onClick={cancel} className="hover:underline text-red-500">
+                        <button type="button" onClick={cancel} className="hover:underline text-red-500">
                             Cancel sign-in
                         </button>
                     </div>

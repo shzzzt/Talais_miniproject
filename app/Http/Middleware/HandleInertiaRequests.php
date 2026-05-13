@@ -4,7 +4,9 @@ namespace App\Http\Middleware;
 
 use App\Models\SchoolYear;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
+use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -19,8 +21,12 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $activeYear = null;
-        if (\Illuminate\Support\Facades\Schema::hasTable('school_years')) {
+        if (Schema::hasTable('school_years')) {
             $activeYear = SchoolYear::where('is_active', true)->first();
+        }
+
+        if ($user && $user->hasFacultyRole()) {
+            $user->loadMissing(['faculty.gradeLevelHead']);
         }
 
         return [
@@ -31,9 +37,10 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
-                    'is_grade_level_head' => (bool) $user->is_grade_level_head,
                     'avatar' => $user->avatar,
                     'two_factor_enabled' => (bool) $user->two_factor_enabled,
+                    'is_grade_level_head' => $user->hasFacultyRole() && (bool) $user->faculty?->is_grade_level_head,
+                    'grade_level_head_label' => $user->faculty?->gradeLevelHead?->name,
                 ] : null,
                 'permissions' => $user ? $user->getAllPermissions()->pluck('name') : [],
                 'unread_notifications_count' => $user ? $user->unreadNotifications()->count() : 0,
@@ -64,7 +71,7 @@ class HandleInertiaRequests extends Middleware
                 'info' => fn () => $request->session()->get('info'),
             ],
             'ziggy' => fn () => [
-                ...(new \Tighten\Ziggy\Ziggy)->toArray(),
+                ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
         ];

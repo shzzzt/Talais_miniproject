@@ -25,6 +25,13 @@ class ParentGuardian extends Model
         'contact_number',
         'email',
         'address',
+        'mother_tongue',
+        'ip_ethnic_group',
+        'religion',
+        'house_street_sitio',
+        'barangay',
+        'municipality_city',
+        'province',
     ];
 
     public function getActivitylogOptions(): LogOptions

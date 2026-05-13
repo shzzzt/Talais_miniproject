@@ -1,7 +1,7 @@
 import AppLayout from '@/Layouts/AppLayout';
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/lib/api";
+import { base44, http } from "@/lib/api";
 import { Plus, Edit2, Trash2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +14,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import PageHeader from "../components/shared/PageHeader";
 import EmptyState from "../components/shared/EmptyState";
 
-const GRADE_LEVELS = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10"];
+const GRADE_LEVELS = ["Kindergarten","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6"];
+
+const NONE_DEPT = "__none__";
+
+function departmentOptionLabel(d) {
+  return d.name;
+}
+
+function isDepartmentalizedGrade(gradeName) {
+  if (!gradeName) return false;
+  const gradeNum = parseInt(gradeName.replace('Grade ', ''), 10);
+  return gradeNum >= 4;
+}
 
 export default function Subjects() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "", code: "", grade_level: "", minutes_per_day: "50" });
+  const [form, setForm] = useState({
+    name: "",
+    code: "",
+    grade_level: "",
+    minutes_per_day: "50",
+    department_id: NONE_DEPT,
+  });
   const [filterGrade, setFilterGrade] = useState("All");
   const queryClient = useQueryClient();
 
@@ -27,6 +45,18 @@ export default function Subjects() {
     queryKey: ["subjects"],
     queryFn: () => base44.entities.Subject.list(),
   });
+
+  const { data: departmentsList = [] } = useQuery({
+    queryKey: ["departments-subjects"],
+    queryFn: async () => {
+      const { data } = await http.get("/departments");
+      return data?.data ?? [];
+    },
+  });
+
+  const departmentsForSelect = useMemo(() => {
+    return departmentsList;
+  }, [departmentsList]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Subject.create(data),
@@ -43,15 +73,27 @@ export default function Subjects() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subjects"] }),
   });
 
-  const resetForm = () => setForm({ name: "", code: "", grade_level: "", minutes_per_day: "50" });
+  const resetForm = () =>
+    setForm({
+      name: "",
+      code: "",
+      grade_level: "",
+      minutes_per_day: "50",
+      department_id: NONE_DEPT,
+    });
 
   const handleSubmit = () => {
     const minutes = form.minutes_per_day === "" ? undefined : parseInt(form.minutes_per_day, 10);
+    const deptId =
+      form.department_id === NONE_DEPT || form.department_id === ""
+        ? null
+        : Number(form.department_id);
     const payload = {
       name: form.name,
       code: form.code || undefined,
       grade_level: form.grade_level,
       minutes_per_day: Number.isFinite(minutes) ? minutes : undefined,
+      department_id: deptId,
     };
     if (editing) {
       updateMutation.mutate({ id: editing.id, data: payload });
@@ -67,6 +109,12 @@ export default function Subjects() {
       code: s.code || "",
       grade_level: s.grade_level,
       minutes_per_day: s.minutes_per_day != null ? String(s.minutes_per_day) : "50",
+      department_id:
+        s.department?.id != null
+          ? String(s.department.id)
+          : s.department_id != null
+            ? String(s.department_id)
+            : NONE_DEPT,
     });
     setShowForm(true);
   };
@@ -105,6 +153,7 @@ export default function Subjects() {
                 <TableHead className="text-xs">Code</TableHead>
                 <TableHead className="text-xs">Subject Name</TableHead>
                 <TableHead className="text-xs">Grade Level</TableHead>
+                <TableHead className="text-xs">Department</TableHead>
                 <TableHead className="text-xs">Minutes / day</TableHead>
                 <TableHead className="text-xs w-20">Actions</TableHead>
               </TableRow>
@@ -115,6 +164,9 @@ export default function Subjects() {
                   <TableCell className="text-xs font-mono text-slate-500">{s.code}</TableCell>
                   <TableCell className="font-medium text-sm">{s.name}</TableCell>
                   <TableCell><Badge variant="secondary">{s.grade_level}</Badge></TableCell>
+                  <TableCell className="text-sm text-slate-600 max-w-[220px]">
+                    {s.department ? departmentOptionLabel(s.department) : "—"}
+                  </TableCell>
                   <TableCell className="text-sm text-slate-600">{s.minutes_per_day ?? "—"}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
@@ -151,10 +203,46 @@ export default function Subjects() {
             </div>
             <div>
               <Label>Grade Level</Label>
-              <Select value={form.grade_level} onValueChange={v => setForm({ ...form, grade_level: v })}>
+              <Select
+                value={form.grade_level}
+                onValueChange={(v) => setForm({ ...form, grade_level: v, department_id: NONE_DEPT })}
+              >
                 <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
                 <SelectContent>
                   {GRADE_LEVELS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Department (optional)</Label>
+              <p className="text-[11px] text-slate-400 mb-1">
+                {!isDepartmentalizedGrade(form.grade_level)
+                  ? "Departments are only available for Grade 4 and above."
+                  : "Link this subject to a department when applicable."}
+              </p>
+              <Select
+                value={form.department_id || NONE_DEPT}
+                onValueChange={(v) => setForm({ ...form, department_id: v })}
+                disabled={!isDepartmentalizedGrade(form.grade_level)}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      !isDepartmentalizedGrade(form.grade_level)
+                        ? "Not available for this grade"
+                        : departmentsForSelect.length === 0
+                          ? "No departments available"
+                          : "None"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_DEPT}>None</SelectItem>
+                  {departmentsForSelect.map((d) => (
+                    <SelectItem key={d.id} value={String(d.id)}>
+                      {departmentOptionLabel(d)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

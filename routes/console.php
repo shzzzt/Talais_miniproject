@@ -17,3 +17,5 @@ Artisan::command('inspire', function () {
 Schedule::command('backup:clean')->daily()->at('01:30');
 Schedule::command('backup:run --only-db')->daily()->at('02:00');
 Schedule::command('backup:run')->weekly()->sundays()->at('03:00');
+
+Schedule::command('school-year:rollover')->dailyAt('00:30')->timezone(config('app.timezone'));
