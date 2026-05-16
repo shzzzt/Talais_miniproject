@@ -61,6 +61,10 @@ class StudentResource extends JsonResource
             'current_grade_level' => $current?->gradeLevel?->name,
             'current_section_id' => $current?->section_id,
             'current_section_name' => $current?->section?->name,
+            'qualifying_score' => $current?->qualifying_score !== null
+                ? (float) $current->qualifying_score
+                : null,
+            'class_session' => $current?->class_session,
             'school_year_id' => $current?->school_year_id,
 
             'parent_id' => $primaryParent?->id,

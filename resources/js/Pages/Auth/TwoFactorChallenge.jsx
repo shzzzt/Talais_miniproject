@@ -26,7 +26,7 @@ export default function TwoFactorChallenge({ email, status }) {
             <Card className="w-full max-w-md border-0 shadow-xl">
                 <CardContent className="p-8 space-y-5">
                     <div className="text-center space-y-1">
-                        <h1 className="text-2xl font-black text-[#1e3a5f]">Verify Your Identity</h1>
+                        <h1 className="text-2xl font-black text-[var(--theme-primary)]">Verify Your Identity</h1>
                         <p className="text-sm text-slate-500">
                             We emailed a 6-digit code to{' '}
                             <span className="font-semibold text-slate-700">{email}</span>.
@@ -58,7 +58,7 @@ export default function TwoFactorChallenge({ email, status }) {
                         <Button
                             type="submit"
                             disabled={processing || data.code.length !== 6}
-                            className="w-full bg-[#1e3a5f] hover:bg-[#2c5282]"
+                            className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
                         >
                             {processing ? 'Verifying…' : 'Verify and Sign In'}
                         </Button>

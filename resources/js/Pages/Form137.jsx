@@ -1,26 +1,40 @@
 import AppLayout from '@/Layouts/AppLayout';
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/lib/api";
-import { FileText, Search, Download, Printer } from "lucide-react";
+import { base44, http } from "@/lib/api";
+import { FileText, Search, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "../components/shared/PageHeader";
 import EmptyState from "../components/shared/EmptyState";
+import { toast } from "sonner";
 
 const GRADE_LEVELS_ORDER = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10"];
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"];
+const ALL_SECTIONS = "all";
+
+function filenameFromDisposition(disposition, fallback) {
+  const match = disposition?.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
+  return match ? decodeURIComponent(match[1]) : fallback;
+}
 
 export default function Form137() {
   const [search, setSearch] = useState("");
+  const [selectedSection, setSelectedSection] = useState(ALL_SECTIONS);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [downloading, setDownloading] = useState(null);
 
   const { data: students = [] } = useQuery({
     queryKey: ["students"],
     queryFn: () => base44.entities.Student.list(),
+  });
+  const { data: sections = [] } = useQuery({
+    queryKey: ["sections"],
+    queryFn: () => base44.entities.Section.list(),
   });
 
   const { data: grades = [] } = useQuery({
@@ -33,9 +47,13 @@ export default function Form137() {
     queryFn: () => base44.entities.Subject.list(),
   });
 
-  const filteredStudents = students.filter(s =>
-    `${s.first_name} ${s.last_name} ${s.lrn}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStudents = useMemo(() => (
+    students
+      .filter((s) => s.status === "enrolled")
+      .filter((s) => selectedSection === ALL_SECTIONS || String(s.current_section_id) === selectedSection)
+      .filter((s) => `${s.first_name} ${s.last_name} ${s.lrn}`.toLowerCase().includes(search.toLowerCase()))
+      .sort((a, b) => `${a.last_name}, ${a.first_name}`.localeCompare(`${b.last_name}, ${b.first_name}`))
+  ), [students, selectedSection, search]);
 
   // Get all grades for selected student grouped by grade level
   const studentGrades = useMemo(() => {
@@ -59,14 +77,28 @@ export default function Form137() {
     return grouped;
   }, [selectedStudent, grades]);
 
-  const downloadForm137 = () => {
+  const downloadReport = async (type) => {
     if (!selectedStudent) return;
-    window.open(`/api/v1/reports/form137?student_id=${selectedStudent.id}`, '_blank');
-  };
+    setDownloading(type);
+    try {
+      const path = type === "form137" ? "/reports/form137" : "/reports/form138";
+      const response = await http.get(`${path}?student_id=${selectedStudent.id}`, { responseType: "blob" });
+      const filename = filenameFromDisposition(response.headers?.["content-disposition"], `${type}.pdf`);
+      const url = URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Report downloaded");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to download report.");
+    } finally {
+      setDownloading(null);
+    }
 
-  const downloadForm138 = () => {
-    if (!selectedStudent) return;
-    window.open(`/api/v1/reports/form138?student_id=${selectedStudent.id}`, '_blank');
   };
 
   return (
@@ -76,16 +108,37 @@ export default function Form137() {
         description="Search and view historical student grades across all grade levels"
       />
 
-      {/* Search */}
+      {/* Selectors */}
       <Card className="border-0 shadow-sm p-4 mb-5">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search student by name or LRN..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setSelectedStudent(null); }}
-            className="pl-9"
-          />
+        <div className="grid md:grid-cols-[240px_1fr_1fr] gap-3">
+          <Select value={selectedSection} onValueChange={(value) => { setSelectedSection(value); setSelectedStudent(null); }}>
+            <SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_SECTIONS}>All sections</SelectItem>
+              {sections.map((section) => (
+                <SelectItem key={section.id} value={String(section.id)}>{section.name} - {section.grade_level}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedStudent ? String(selectedStudent.id) : ""} onValueChange={(value) => setSelectedStudent(students.find((s) => String(s.id) === value) ?? null)}>
+            <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
+            <SelectContent>
+              {filteredStudents.map((student) => (
+                <SelectItem key={student.id} value={String(student.id)}>
+                  {student.last_name}, {student.first_name} - {student.current_section_name || "No section"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              placeholder="Search within selection..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setSelectedStudent(null); }}
+              className="pl-9"
+            />
+          </div>
         </div>
       </Card>
 
@@ -133,10 +186,10 @@ export default function Form137() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setSelectedStudent(null)}>Back to Search</Button>
-                  <Button variant="outline" onClick={downloadForm138}>
+                  <Button variant="outline" onClick={() => downloadReport("form138")} isLoading={downloading === "form138"} loadingText="Downloading...">
                     <Download className="w-4 h-4 mr-2" /> Form 138
                   </Button>
-                  <Button onClick={downloadForm137} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+                  <Button onClick={() => downloadReport("form137")} isLoading={downloading === "form137"} loadingText="Downloading..." className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
                     <Download className="w-4 h-4 mr-2" /> Form 137 PDF
                   </Button>
                 </div>
@@ -202,7 +255,7 @@ export default function Form137() {
       )}
 
       {!selectedStudent && !search && (
-        <EmptyState icon={FileText} title="Search for a student" description="Enter a name or LRN to view their permanent academic record" />
+        <EmptyState icon={FileText} title="Select a student" description="Choose a section, then select a student to view their permanent academic record" />
       )}
     </div>
   );

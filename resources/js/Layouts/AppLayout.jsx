@@ -6,7 +6,13 @@ import {
   LayoutDashboard, Users, ClipboardCheck, BookOpen,
   FileText, HeartPulse, Calendar, Menu, Bell, LogOut,
   GraduationCap, ChevronDown, ChevronRight, BarChart3,
+<<<<<<< Updated upstream
   AlertTriangle, Settings, Shield, Clock, User, ArrowRightLeft, TrendingUp, Files, Database, Activity, UserPlus
+=======
+  AlertTriangle, Settings, Clock, User, Files, Database, Activity, UserPlus,
+  LayoutGrid,
+  Award,
+>>>>>>> Stashed changes
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/roles";
@@ -22,6 +28,7 @@ import { http } from "@/lib/api";
 const NAV_ADMIN = [
   { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
   { name: "User Management", icon: Users, page: "UserManagement" },
+  { name: "Qualifying exam", icon: Award, page: "QualifyingExam" },
   { name: "School Year Settings", icon: Calendar, page: "SchoolYears" },
   { name: "Logs", icon: Activity, page: "Logs" },
   { name: "Database Backup", icon: Database, page: "DatabaseBackup" },
@@ -30,10 +37,10 @@ const NAV_ADMIN = [
 
 const NAV_FACULTY = [
   { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
-  { name: "My Classes", icon: BookOpen, page: "Grading" },
+  { name: "Grading", icon: BookOpen, page: "Grading" },
   { name: "Attendance", icon: ClipboardCheck, page: "Attendance" },
   { name: "My Schedule", icon: Clock, page: "Scheduling" },
-  { name: "Health Records", icon: HeartPulse, page: "HealthRecords" },
+  { name: "Feeding Program", icon: HeartPulse, page: "HealthRecords" },
   { name: "Violations", icon: AlertTriangle, page: "Violations" },
 ];
 
@@ -50,6 +57,7 @@ const NAV_SCHOOL_ADMIN = [
       { name: "Sections", page: "Sections" },
       { name: "Subjects", page: "Subjects" },
       { name: "Enroll students", page: "Enrollment" },
+      { name: "Qualifying exam", page: "QualifyingExam" },
     ]
   },
   { name: "Scheduling", icon: Clock, page: "Scheduling" },
@@ -81,7 +89,7 @@ export default function AppLayout({ children, currentPageName }) {
   if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-[#1e3a5f] rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-[var(--theme-primary)] rounded-full animate-spin" />
       </div>
     );
   }
@@ -132,7 +140,7 @@ export default function AppLayout({ children, currentPageName }) {
             <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center shrink-0 overflow-hidden">
               {schoolSettings.logoUrl
                 ? <img src={schoolSettings.logoUrl} alt="logo" className="w-full h-full object-contain p-0.5" />
-                : <GraduationCap className="w-6 h-6 text-[#1e3a5f]" />
+                : <GraduationCap className="w-6 h-6 text-[var(--theme-primary)]" />
               }
             </div>
             <div>
@@ -235,7 +243,7 @@ export default function AppLayout({ children, currentPageName }) {
                   <div className="flex items-center justify-between px-2 py-1">
                     <DropdownMenuLabel className="px-1">Notifications</DropdownMenuLabel>
                     {unreadCount > 0 && (
-                      <button onClick={markAllRead} className="text-[11px] text-[#1e3a5f] hover:underline">
+                      <button onClick={markAllRead} className="text-[11px] text-[var(--theme-primary)] hover:underline">
                         Mark all read
                       </button>
                     )}
@@ -268,8 +276,10 @@ export default function AppLayout({ children, currentPageName }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">
-                    <div className="w-7 h-7 rounded-full bg-[#1e3a5f] flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">{user.name?.[0]}</span>
+                    <div className="w-7 h-7 rounded-full bg-[var(--theme-primary)] flex items-center justify-center overflow-hidden">
+                      {user.avatar
+                        ? <img src={user.avatar} alt={user.name ?? "Profile"} className="w-full h-full object-cover" />
+                        : <span className="text-xs font-bold text-white">{user.name?.[0]}</span>}
                     </div>
                     <div className="hidden sm:block text-left">
                       <p className="text-xs font-semibold text-slate-700 leading-tight">{user.name}</p>

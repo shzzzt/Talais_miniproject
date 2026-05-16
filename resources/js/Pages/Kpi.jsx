@@ -34,7 +34,7 @@ export default function Kpi() {
           <Button
             onClick={() => computeMutation.mutate()}
             disabled={computeMutation.isPending}
-            className="bg-[#1e3a5f] hover:bg-[#2c5282]"
+            className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${computeMutation.isPending ? 'animate-spin' : ''}`} />
             {computeMutation.isPending ? 'Computing...' : 'Recompute KPIs'}

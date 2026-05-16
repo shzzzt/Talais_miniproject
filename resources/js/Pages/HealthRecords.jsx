@@ -1,5 +1,5 @@
 import AppLayout from '@/Layouts/AppLayout';
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/lib/api";
 import { HeartPulse, Plus, Download, AlertTriangle, Search, Edit2, Trash2 } from "lucide-react";
@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import StatCard from "../components/shared/StatCard";
 import PageHeader from "../components/shared/PageHeader";
 import EmptyState from "../components/shared/EmptyState";
+import { useAuth } from '@/lib/AuthContext';
+import { toast } from "sonner";
 
 function calculateBMI(weightKg, heightCm) {
   if (!weightKg || !heightCm) return { bmi: 0, category: "Normal" };
@@ -39,16 +41,47 @@ function calculateAge(birthday) {
 }
 
 export default function HealthRecords() {
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState("");
+  const [selectedSection, setSelectedSection] = useState("all");
   const [form, setForm] = useState({ height_cm: "", weight_kg: "", date_recorded: new Date().toISOString().split("T")[0], remarks: "" });
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const queryClient = useQueryClient();
 
   const { data: students = [] } = useQuery({ queryKey: ["students"], queryFn: () => base44.entities.Student.list() });
+  const { data: sections = [] } = useQuery({ queryKey: ["sections"], queryFn: () => base44.entities.Section.list() });
+  const { data: faculty = [] } = useQuery({ queryKey: ["faculty"], queryFn: () => base44.entities.Faculty.list() });
   const { data: records = [] } = useQuery({ queryKey: ["healthRecords"], queryFn: () => base44.entities.HealthRecord.list("-created_date") });
+
+  const currentFaculty = faculty.find((item) => String(item.user_id) === String(user?.id ?? ""));
+  const isGradeLevelHead = Boolean(currentFaculty?.is_grade_level_head && currentFaculty?.grade_level_head_of);
+  const gradeHeadLevel = currentFaculty?.grade_level_head?.name ?? "";
+  const gradeHeadSections = useMemo(() => (
+    sections
+      .filter((section) => String(section.grade_level_id ?? "") === String(currentFaculty?.grade_level_head_of ?? ""))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  ), [sections, currentFaculty?.grade_level_head_of]);
+  const scopedStudents = useMemo(() => (
+    students
+      .filter((student) => student.status === "enrolled")
+      .filter((student) => !isGradeLevelHead || String(student.current_grade_level_id) === String(currentFaculty?.grade_level_head_of))
+      .filter((student) => selectedSection === "all" || String(student.current_section_id) === selectedSection)
+      .sort((a, b) => `${a.last_name}, ${a.first_name}`.localeCompare(`${b.last_name}, ${b.first_name}`))
+  ), [students, isGradeLevelHead, currentFaculty?.grade_level_head_of, selectedSection]);
+  const latestRecordByStudent = useMemo(() => {
+    const map = new Map();
+    records.forEach((record) => {
+      const key = String(record.student_id);
+      const existing = map.get(key);
+      if (!existing || String(record.date_recorded ?? "") > String(existing.date_recorded ?? "")) {
+        map.set(key, record);
+      }
+    });
+    return map;
+  }, [records]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.HealthRecord.create(data),
@@ -71,10 +104,10 @@ export default function HealthRecords() {
   };
 
   const handleSubmit = () => {
-    const student = students.find(s => s.id === selectedStudent);
+    const student = scopedStudents.find(s => String(s.id) === String(selectedStudent));
     if (!student && !editing) return;
 
-    const target = editing ? students.find(s => s.id === editing.student_id) : student;
+    const target = editing ? students.find(s => String(s.id) === String(editing.student_id)) : student;
     const { bmi, category } = calculateBMI(parseFloat(form.weight_kg), parseFloat(form.height_cm));
     const age = calculateAge(target?.birthday);
     const needsFeeding = category === "Severely Wasted" || category === "Wasted";
@@ -102,15 +135,27 @@ export default function HealthRecords() {
 
   const openEdit = (rec) => {
     setEditing(rec);
-    setSelectedStudent(rec.student_id);
+    setSelectedStudent(String(rec.student_id));
     setForm({ height_cm: rec.height_cm, weight_kg: rec.weight_kg, date_recorded: rec.date_recorded, remarks: rec.remarks || "" });
+    setShowForm(true);
+  };
+
+  const openCreateForStudent = (studentId = "") => {
+    if (!studentId && isGradeLevelHead && selectedSection === "all") {
+      toast.error("Select a section first.");
+      return;
+    }
+    setEditing(null);
+    resetForm();
+    setSelectedStudent(String(studentId));
     setShowForm(true);
   };
 
   const filtered = records.filter(r => {
     const matchSearch = (r.student_name || "").toLowerCase().includes(search.toLowerCase());
     const matchCategory = filterCategory === "All" || r.bmi_category === filterCategory;
-    return matchSearch && matchCategory;
+    const matchScope = !isGradeLevelHead || scopedStudents.some((student) => String(student.id) === String(r.student_id));
+    return matchSearch && matchCategory && matchScope;
   });
 
   const feedingCount = records.filter(r => r.feeding_program).length;
@@ -143,7 +188,7 @@ export default function HealthRecords() {
         action={
           <div className="flex gap-2">
             <Button variant="outline" onClick={downloadCSV}><Download className="w-4 h-4 mr-2" /> Export</Button>
-            <Button onClick={() => { setEditing(null); resetForm(); setShowForm(true); }} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+            <Button onClick={() => openCreateForStudent()} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
               <Plus className="w-4 h-4 mr-2" /> New Record
             </Button>
           </div>
@@ -161,6 +206,17 @@ export default function HealthRecords() {
       {/* Filters */}
       <Card className="border-0 shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row gap-3">
+          {isGradeLevelHead && (
+            <Select value={selectedSection} onValueChange={setSelectedSection}>
+              <SelectTrigger className="w-full sm:w-56"><SelectValue placeholder="Select section" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{gradeHeadLevel || "Grade level"} sections</SelectItem>
+                {gradeHeadSections.map((section) => (
+                  <SelectItem key={section.id} value={String(section.id)}>{section.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input placeholder="Search student..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
@@ -178,6 +234,51 @@ export default function HealthRecords() {
           </Select>
         </div>
       </Card>
+
+      {isGradeLevelHead && (
+        <Card className="border-0 shadow-sm overflow-hidden mb-4">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm">Students {selectedSection !== "all" ? "in selected section" : `in ${gradeHeadLevel}`}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {scopedStudents.length === 0 ? (
+              <div className="p-8 text-center text-sm text-slate-400">No enrolled students found.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50">
+                      <TableHead className="text-xs">Student</TableHead>
+                      <TableHead className="text-xs">Section</TableHead>
+                      <TableHead className="text-xs">Latest BMI</TableHead>
+                      <TableHead className="text-xs">Category</TableHead>
+                      <TableHead className="text-xs w-32">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {scopedStudents.map((student) => {
+                      const latest = latestRecordByStudent.get(String(student.id));
+                      return (
+                        <TableRow key={student.id}>
+                          <TableCell className="text-sm font-medium">{student.last_name}, {student.first_name}</TableCell>
+                          <TableCell className="text-sm text-slate-600">{student.current_section_name || "No section"}</TableCell>
+                          <TableCell className="text-sm">{latest?.bmi ?? "No record"}</TableCell>
+                          <TableCell>{latest?.bmi_category ? <Badge className={bmiColors[latest.bmi_category]}>{latest.bmi_category}</Badge> : null}</TableCell>
+                          <TableCell>
+                            <Button size="sm" variant="outline" onClick={() => openCreateForStudent(student.id)}>
+                              Edit
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Table */}
       {filtered.length === 0 ? (
@@ -243,8 +344,8 @@ export default function HealthRecords() {
                 <Select value={selectedStudent} onValueChange={setSelectedStudent}>
                   <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
                   <SelectContent>
-                    {students.filter(s => s.status === "enrolled").map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.last_name}, {s.first_name} – {s.current_grade_level}</SelectItem>
+                    {scopedStudents.map(s => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.last_name}, {s.first_name} - {s.current_grade_level} / {s.current_section_name || "No section"}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -288,7 +389,7 @@ export default function HealthRecords() {
             <Button
               onClick={handleSubmit}
               disabled={(!editing && !selectedStudent) || !form.height_cm || !form.weight_kg}
-              className="bg-[#1e3a5f] hover:bg-[#2c5282]"
+              className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
             >
               {editing ? "Update" : "Save Record"}
             </Button>

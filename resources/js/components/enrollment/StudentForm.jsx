@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/lib/api";
 import { extractApiError } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,9 @@ export default function StudentForm({ open, onClose, onSubmit, student, sections
     }
   }, [student, open]);
 
-  const handleSubmit = () => {
+  const queryClient = useQueryClient();
+
+  const handleSubmit = async () => {
     const section = sections.find(
       (sec) => String(sec.id) === String(form.current_section_id)
     );
@@ -105,7 +107,16 @@ export default function StudentForm({ open, onClose, onSubmit, student, sections
       delete payload.enrollment_type;
     }
 
-    onSubmit(payload);
+    try {
+      // allow parent to perform the API save and then refresh students
+      const maybePromise = onSubmit(payload);
+      if (maybePromise && typeof maybePromise.then === 'function') {
+        await maybePromise;
+      }
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+    } catch (e) {
+      // ignore here; parent will handle errors
+    }
   };
 
   const filteredSections = sections.filter((s) => s.grade_level === form.current_grade_level);
@@ -403,7 +414,7 @@ export default function StudentForm({ open, onClose, onSubmit, student, sections
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="bg-[#1e3a5f] hover:bg-[#2c5282]"
+            className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
           >
             {student ? "Update" : "Save student"}
           </Button>

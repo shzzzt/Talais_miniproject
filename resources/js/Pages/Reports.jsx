@@ -1,29 +1,47 @@
 import AppLayout from '@/Layouts/AppLayout';
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/lib/api';
-import { FileSpreadsheet, FileText } from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { base44, http } from '@/lib/api';
+import { FileSpreadsheet, FileText, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageHeader from '../components/shared/PageHeader';
+import { toast } from 'sonner';
 
 const NONE = '__none__';
 
-function openUrl(path) {
+function filenameFromDisposition(disposition, fallback) {
+  const match = disposition?.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
+  return match ? decodeURIComponent(match[1]) : fallback;
+}
+
+async function downloadReport(path, fallbackName) {
   if (!path) return;
-  window.open(path, '_blank', 'noopener,noreferrer');
+  const apiPath = path.replace(/^\/api\/v1/, '');
+  const response = await http.get(apiPath, { responseType: 'blob' });
+  const filename = filenameFromDisposition(response.headers?.['content-disposition'], fallbackName);
+  const url = URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 export default function Reports() {
+  const form138ImportInputRef = useRef(null);
   const [sectionId, setSectionId] = useState(NONE);
   const [schoolYearId, setSchoolYearId] = useState(NONE);
   const [studentId, setStudentId] = useState('');
   const [sf2From, setSf2From] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10));
   const [sf2To, setSf2To] = useState(() => new Date().toISOString().slice(0, 10));
   const [sf4Month, setSf4Month] = useState(() => new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }));
+  const [downloadingReport, setDownloadingReport] = useState(null);
 
   const { data: sections = [] } = useQuery({
     queryKey: ['sections'],
@@ -36,6 +54,33 @@ export default function Reports() {
   const { data: students = [] } = useQuery({
     queryKey: ['students-reports'],
     queryFn: () => base44.entities.Student.list(),
+  });
+  const reportStudents = useMemo(() => (
+    students
+      .filter((student) => sectionId === NONE || String(student.current_section_id) === String(sectionId))
+      .sort((a, b) => `${a.last_name}, ${a.first_name}`.localeCompare(`${b.last_name}, ${b.first_name}`))
+  ), [students, sectionId]);
+  const importForm138Mutation = useMutation({
+    mutationFn: async (file) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('student_id', studentId);
+      if (schoolYearId !== NONE) fd.append('school_year_id', schoolYearId);
+
+      const { data } = await http.post('/reports/excel/form138/import', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data?.data ?? data;
+    },
+    onSuccess: (result) => {
+      toast.success(`Form 138 imported: ${result?.created ?? 0} created, ${result?.updated ?? 0} updated`);
+      if (result?.skipped_subjects?.length) {
+        toast.message('Some subjects were skipped', {
+          description: result.skipped_subjects.join(', '),
+        });
+      }
+    },
+    onError: (error) => toast.error(error?.response?.data?.message || 'Failed to import Form 138.'),
   });
 
   const q = (base) => {
@@ -78,6 +123,33 @@ export default function Reports() {
     return `${pdf ? '/api/v1/reports/form138' : '/api/v1/reports/excel/form138'}?${p.toString()}`;
   };
 
+  const selectForm138Import = () => {
+    if (!studentId) {
+      toast.error('Select a student before importing Form 138.');
+      return;
+    }
+    form138ImportInputRef.current?.click();
+  };
+
+  const handleForm138Import = (event) => {
+    const file = event.target.files?.[0];
+    if (file) importForm138Mutation.mutate(file);
+    event.target.value = '';
+  };
+
+  const runDownload = async (key, path, fallbackName) => {
+    if (!path) return;
+    setDownloadingReport(key);
+    try {
+      await downloadReport(path, fallbackName);
+      toast.success('Export downloaded');
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to download export.');
+    } finally {
+      setDownloadingReport(null);
+    }
+  };
+
   const buildPir = (pdf) => {
     const p = new URLSearchParams();
     if (schoolYearId !== NONE) p.set('school_year_id', schoolYearId);
@@ -87,13 +159,13 @@ export default function Reports() {
   };
 
   const rows = [
-    { title: 'SF1 — School Register', pdf: () => openUrl(q('/api/v1/reports/sf1')), xlsx: () => openUrl(q('/api/v1/reports/excel/sf1')) },
-    { title: 'SF2 — Attendance summary', pdf: () => openUrl(buildSf2(false)), xlsx: () => openUrl(buildSf2(true)), needsSection: true },
-    { title: 'SF4 — Learner movement', pdf: () => openUrl(buildSf4(false)), xlsx: () => openUrl(buildSf4(true)) },
-    { title: 'SF5 — Promotion', pdf: () => openUrl(q('/api/v1/reports/sf5')), xlsx: () => openUrl(q('/api/v1/reports/excel/sf5')) },
-    { title: 'Form 137', pdf: () => openUrl(buildForm137(true)), xlsx: () => openUrl(buildForm137(false)), needsStudent: true },
-    { title: 'Form 138', pdf: () => openUrl(buildForm138(true)), xlsx: () => openUrl(buildForm138(false)), needsStudent: true },
-    { title: 'PIR', pdf: () => openUrl(buildPir(true)), xlsx: () => openUrl(buildPir(false)) },
+    { key: 'sf1', title: 'SF1 — School Register', pdf: () => q('/api/v1/reports/sf1'), xlsx: () => q('/api/v1/reports/excel/sf1') },
+    { key: 'sf2', title: 'SF2 — Attendance summary', pdf: () => buildSf2(false), xlsx: () => buildSf2(true), needsSection: true },
+    { key: 'sf4', title: 'SF4 — Learner movement', pdf: () => buildSf4(false), xlsx: () => buildSf4(true) },
+    { key: 'sf5', title: 'SF5 — Promotion', pdf: () => q('/api/v1/reports/sf5'), xlsx: () => q('/api/v1/reports/excel/sf5') },
+    { key: 'form137', title: 'Form 137', pdf: () => buildForm137(true), xlsx: () => buildForm137(false), needsStudent: true },
+    { key: 'form138', title: 'Form 138', pdf: () => buildForm138(true), xlsx: () => buildForm138(false), importXlsx: selectForm138Import, needsStudent: true },
+    { key: 'pir', title: 'PIR', pdf: () => buildPir(true), xlsx: () => buildPir(false) },
   ];
 
   return (
@@ -109,8 +181,8 @@ export default function Reports() {
         </CardHeader>
         <CardContent className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <Label className="text-xs">Section (SF1, SF2, SF5)</Label>
-            <Select value={sectionId} onValueChange={setSectionId}>
+            <Label className="text-xs">Section (reports / student selector)</Label>
+            <Select value={sectionId} onValueChange={(value) => { setSectionId(value); setStudentId(''); }}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Section" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NONE}>All sections (optional)</SelectItem>
@@ -137,8 +209,8 @@ export default function Reports() {
             <Select value={studentId} onValueChange={setStudentId}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select student" /></SelectTrigger>
               <SelectContent>
-                {students.map((st) => (
-                  <SelectItem key={st.id} value={String(st.id)}>{st.last_name}, {st.first_name}</SelectItem>
+                {reportStudents.map((st) => (
+                  <SelectItem key={st.id} value={String(st.id)}>{st.last_name}, {st.first_name} - {st.current_section_name || 'No section'}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -161,23 +233,51 @@ export default function Reports() {
       </Card>
 
       <div className="grid md:grid-cols-2 gap-4">
+        <input
+          ref={form138ImportInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          className="hidden"
+          onChange={handleForm138Import}
+        />
         {rows.map((row) => (
           <Card key={row.title} className="border-0 shadow-sm">
             <CardHeader className="py-3">
               <CardTitle className="text-sm">{row.title}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" disabled={row.needsSection && sectionId === NONE} onClick={row.pdf}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={(row.needsSection && sectionId === NONE) || (row.needsStudent && !studentId)}
+                onClick={() => runDownload(`${row.key}-pdf`, row.pdf(), `${row.key}.pdf`)}
+                isLoading={downloadingReport === `${row.key}-pdf`}
+                loadingText="PDF"
+              >
                 <FileText className="w-4 h-4 mr-1" /> PDF
               </Button>
               <Button
                 size="sm"
-                className="bg-[#1e3a5f] hover:bg-[#2c5282]"
+                className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
                 disabled={(row.needsSection && sectionId === NONE) || (row.needsStudent && !studentId)}
-                onClick={row.xlsx}
+                onClick={() => runDownload(`${row.key}-xlsx`, row.xlsx(), `${row.key}.xlsx`)}
+                isLoading={downloadingReport === `${row.key}-xlsx`}
+                loadingText="Excel"
               >
                 <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
               </Button>
+              {row.importXlsx && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={row.needsStudent && !studentId}
+                  onClick={row.importXlsx}
+                  isLoading={importForm138Mutation.isPending}
+                  loadingText="Importing..."
+                >
+                  <Upload className="w-4 h-4 mr-1" /> Import
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

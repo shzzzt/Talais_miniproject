@@ -165,7 +165,7 @@ export default function UserManagement() {
                 title="User Management"
                 description="Manage system administrators, school admins, faculty, and parent accounts"
                 action={
-                    <Button onClick={openCreate} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+                    <Button onClick={openCreate} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
                         <Plus className="w-4 h-4 mr-2" /> Add User
                     </Button>
                 }
@@ -240,7 +240,7 @@ export default function UserManagement() {
                                 <TableRow key={u.id} className="hover:bg-slate-50">
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-[#1e3a5f] flex items-center justify-center">
+                                            <div className="w-8 h-8 rounded-full bg-[var(--theme-primary)] flex items-center justify-center">
                                                 <span className="text-xs font-bold text-white">
                                                     {(u.name ?? "?")[0]}
                                                 </span>
@@ -455,7 +455,7 @@ export default function UserManagement() {
                                 createMutation.isPending ||
                                 updateMutation.isPending
                             }
-                            className="bg-[#1e3a5f] hover:bg-[#2c5282]"
+                            className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
                         >
                             {editing ? "Update" : "Create User"}
                         </Button>

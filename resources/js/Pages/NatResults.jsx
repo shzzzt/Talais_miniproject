@@ -86,7 +86,7 @@ export default function NatResults() {
         action={
           <div className="flex gap-2">
             <Button variant="outline" onClick={downloadCSV}><Download className="w-4 h-4 mr-2" /> Export</Button>
-            <Button onClick={() => setShowForm(true)} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+            <Button onClick={() => setShowForm(true)} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
               <Plus className="w-4 h-4 mr-2" /> Add Result
             </Button>
           </div>
@@ -182,7 +182,7 @@ export default function NatResults() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={!form.subject_id || !form.grade_level_id || !form.mean_percentage_score || createMutation.isPending} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+            <Button onClick={handleSubmit} disabled={!form.subject_id || !form.grade_level_id || !form.mean_percentage_score || createMutation.isPending} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
               {createMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>

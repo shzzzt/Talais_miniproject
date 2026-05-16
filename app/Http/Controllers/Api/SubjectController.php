@@ -7,6 +7,7 @@ use App\Models\GradeLevel;
 use App\Models\Subject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class SubjectController extends Controller
 {
@@ -33,13 +34,14 @@ class SubjectController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120', 'unique:subjects,name'],
+            'name' => ['required', 'string', 'max:120'],
             'code' => ['nullable', 'string', 'max:20', 'unique:subjects,code'],
             'minutes_per_day' => ['nullable', 'integer', 'min:0', 'max:600'],
             'grade_level' => ['nullable', 'string', 'max:30'],
             'teacher_name' => ['nullable', 'string', 'max:120'],
         ]);
         $gradeLevelName = $data['grade_level'] ?? null;
+        $this->ensureNameIsUniqueForGrade($data['name'], $gradeLevelName);
         unset($data['grade_level'], $data['teacher_name']);
 
         $subject = Subject::create($data);
@@ -58,13 +60,18 @@ class SubjectController extends Controller
         $subject = Subject::findOrFail($id);
 
         $data = $request->validate([
-            'name' => ['sometimes', 'required', 'string', 'max:120', 'unique:subjects,name,'.$subject->id],
+            'name' => ['sometimes', 'required', 'string', 'max:120'],
             'code' => ['nullable', 'string', 'max:20', 'unique:subjects,code,'.$subject->id],
             'minutes_per_day' => ['nullable', 'integer', 'min:0', 'max:600'],
             'grade_level' => ['nullable', 'string', 'max:30'],
             'teacher_name' => ['nullable', 'string', 'max:120'],
         ]);
         $gradeLevelName = $data['grade_level'] ?? null;
+        $this->ensureNameIsUniqueForGrade(
+            $data['name'] ?? $subject->name,
+            $gradeLevelName ?? $subject->gradeLevels()->first()?->name,
+            $subject->id,
+        );
         unset($data['grade_level'], $data['teacher_name']);
 
         $subject->fill($data)->save();
@@ -94,6 +101,30 @@ class SubjectController extends Controller
             'performance_task_weight' => 50,
             'quarterly_assessment_weight' => 20,
         ]]);
+    }
+
+    private function ensureNameIsUniqueForGrade(string $name, ?string $gradeLevelName, ?int $ignoreSubjectId = null): void
+    {
+        if (! $gradeLevelName) {
+            return;
+        }
+
+        $level = GradeLevel::where('name', $gradeLevelName)->first();
+        if (! $level) {
+            return;
+        }
+
+        $exists = Subject::query()
+            ->where('name', $name)
+            ->when($ignoreSubjectId, fn ($q) => $q->whereKeyNot($ignoreSubjectId))
+            ->whereHas('gradeLevels', fn ($q) => $q->where('grade_levels.id', $level->id))
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'name' => ['A subject with this name already exists for '.$level->name.'.'],
+            ]);
+        }
     }
 
     private function present(Subject $s): array

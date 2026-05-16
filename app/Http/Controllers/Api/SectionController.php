@@ -9,13 +9,14 @@ use App\Models\Section;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class SectionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $sections = Section::query()
-            ->with(['gradeLevel:id,name', 'adviser:id,name', 'schoolYear:id,label,is_active'])
+            ->with(['gradeLevel:id,name,has_session', 'adviser:id,name', 'schoolYear:id,label,is_active'])
             ->withCount('enrollments')
             ->when($request->filled('school_year_id'), fn ($q) => $q->where('school_year_id', $request->integer('school_year_id')))
             ->when($request->filled('grade_level_id'), fn ($q) => $q->where('grade_level_id', $request->integer('grade_level_id')))
@@ -86,6 +87,7 @@ class SectionController extends Controller
             'adviser_email' => ['nullable', 'email', 'max:160'],
             'max_capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
+        $hasAdviserId = array_key_exists('adviser_id', $data);
 
         if (empty($data['grade_level_id']) && ! empty($data['grade_level'])) {
             $level = GradeLevel::where('name', $data['grade_level'])->first();
@@ -108,7 +110,28 @@ class SectionController extends Controller
         }
         unset($data['adviser_name'], $data['adviser_email']);
 
-        return array_filter($data, fn ($v) => $v !== null && $v !== '');
+        $gradeId = $data['grade_level_id'] ?? $existing?->grade_level_id;
+        if ($gradeId) {
+            $grade = GradeLevel::find($gradeId);
+            if ($grade?->usesSessionScheduling()) {
+                if (! $existing && empty($data['session'])) {
+                    $data['session'] = 'AM';
+                }
+                $session = $data['session'] ?? $existing?->session ?? 'whole_day';
+                if (! in_array($session, ['AM', 'PM'], true)) {
+                    throw ValidationException::withMessages([
+                        'session' => ['Kindergarten 1, Kindergarten 2, and other session-split grades require Morning (AM) or Afternoon (PM) for each section.'],
+                    ]);
+                }
+            }
+        }
+
+        $payload = array_filter($data, fn ($v) => $v !== null && $v !== '');
+        if ($hasAdviserId) {
+            $payload['adviser_id'] = $data['adviser_id'] ?? null;
+        }
+
+        return $payload;
     }
 
     private function present(Section $s): array
@@ -119,6 +142,8 @@ class SectionController extends Controller
             'school_year_id' => $s->school_year_id,
             'grade_level_id' => $s->grade_level_id,
             'grade_level' => $s->gradeLevel?->name,
+            'grade_has_session' => (bool) $s->gradeLevel?->has_session,
+            'grade_uses_session_scheduling' => (bool) $s->gradeLevel?->usesSessionScheduling(),
             'type' => $s->type,
             'session' => $s->session,
             'adviser_id' => $s->adviser_id,

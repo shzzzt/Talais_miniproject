@@ -80,7 +80,7 @@ export default function BackupManagement() {
             Triggers a `pg_dump` of the active PostgreSQL database via spatie/laravel-backup. The resulting zip is stored on the configured filesystem.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => runMutation.mutate("database")} disabled={runMutation.isPending} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+            <Button onClick={() => runMutation.mutate("database")} disabled={runMutation.isPending} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
               {runMutation.isPending ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Running...</> : <><Database className="w-4 h-4 mr-2" /> DB Only</>}
             </Button>
             <Button variant="outline" onClick={() => runMutation.mutate("full")} disabled={runMutation.isPending}>

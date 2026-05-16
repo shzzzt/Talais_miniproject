@@ -176,7 +176,7 @@ export default function Students() {
             <Button variant="outline" onClick={downloadSF1}>
               <Download className="w-4 h-4 mr-2" /> SF1
             </Button>
-            <Button onClick={() => { setEditingStudent(null); setShowForm(true); }} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+            <Button onClick={() => { setEditingStudent(null); setShowForm(true); }} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
               <Plus className="w-4 h-4 mr-2" /> Enroll Student
             </Button>
           </div>
@@ -238,7 +238,7 @@ export default function Students() {
                   <TableRow key={s.id} className="hover:bg-slate-50/50">
                     <TableCell className="text-xs font-mono text-slate-500">{s.lrn}</TableCell>
                     <TableCell>
-                      <Link href={`/StudentProfile/${s.id}`} className="text-sm font-medium text-[#1e3a5f] hover:underline cursor-pointer">
+                      <Link href={`/StudentProfile/${s.id}`} className="text-sm font-medium text-[var(--theme-primary)] hover:underline cursor-pointer">
                         {s.last_name}, {s.first_name} {s.middle_name}
                       </Link>
                     </TableCell>

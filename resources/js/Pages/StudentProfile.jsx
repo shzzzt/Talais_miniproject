@@ -139,7 +139,7 @@ export default function StudentProfile() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center py-24">
-      <div className="w-8 h-8 border-4 border-slate-200 border-t-[#1e3a5f] rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 border-slate-200 border-t-[var(--theme-primary)] rounded-full animate-spin" />
     </div>
   );
 
@@ -193,7 +193,7 @@ export default function StudentProfile() {
         <CardContent className="pt-5 pb-5">
           <div className="flex flex-col sm:flex-row gap-5 items-start">
             {/* Avatar */}
-            <div className="w-16 h-16 rounded-2xl bg-[#1e3a5f] flex items-center justify-center shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--theme-primary)] flex items-center justify-center shrink-0">
               {student.photo_url
                 ? <img src={student.photo_url} className="w-16 h-16 rounded-2xl object-cover" alt="photo" />
                 : <span className="text-2xl font-bold text-white">{student.first_name?.[0]}{student.last_name?.[0]}</span>
@@ -357,7 +357,7 @@ export default function StudentProfile() {
                 </div>
               )}
               <div className="px-4 py-3 border-t bg-slate-50/80">
-                <Button variant="link" className="text-[#1e3a5f] h-auto p-0" asChild>
+                <Button variant="link" className="text-[var(--theme-primary)] h-auto p-0" asChild>
                   <Link href="/Enrollment">Manage enrollments →</Link>
                 </Button>
               </div>

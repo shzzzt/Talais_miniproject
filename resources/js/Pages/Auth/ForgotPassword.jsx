@@ -18,7 +18,7 @@ export default function ForgotPassword({ status }) {
             <Card className="w-full max-w-md border-0 shadow-xl">
                 <CardContent className="p-8 space-y-6">
                     <div className="text-center space-y-1">
-                        <h1 className="text-2xl font-black text-[#1e3a5f]">Reset Password</h1>
+                        <h1 className="text-2xl font-black text-[var(--theme-primary)]">Reset Password</h1>
                         <p className="text-sm text-slate-500">
                             Enter your email and we&apos;ll send you a reset link.
                         </p>
@@ -44,7 +44,7 @@ export default function ForgotPassword({ status }) {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="w-full bg-[#1e3a5f] hover:bg-[#2c5282]"
+                            className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
                         >
                             {processing ? 'Sending…' : 'Email Password Reset Link'}
                         </Button>

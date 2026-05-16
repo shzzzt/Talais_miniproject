@@ -33,7 +33,7 @@ class ClassScheduleController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = ClassSchedule::query()->with([
-            'section:id,name,grade_level_id',
+            'section:id,name,grade_level_id,adviser_id',
             'section.gradeLevel:id,name',
             'subject:id,name',
             'faculty:id,first_name,last_name,position',
@@ -87,13 +87,88 @@ class ClassScheduleController extends Controller
         return $request->validate([
             'school_year_id' => ['nullable', 'integer', 'exists:school_years,id'],
             'section_id' => ['required', 'integer', 'exists:sections,id'],
-            'subject_id' => ['required', 'integer', 'exists:subjects,id'],
+            'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
             'faculty_id' => ['nullable', 'integer', 'exists:faculty,id'],
             'day_of_week' => ['required'],
             'day' => ['nullable', 'string'],
             'time_start' => ['required', 'string'],
             'time_end' => ['required', 'string'],
         ]);
+<<<<<<< Updated upstream
+=======
+
+        $section = Section::query()
+            ->with('gradeLevel:id,name')
+            ->select(['id', 'grade_level_id', 'adviser_id'])
+            ->findOrFail($payload['section_id']);
+        $isKinder = $this->isKindergartenSplitGrade($section->gradeLevel?->name);
+
+        if ($isKinder) {
+            if (! empty($payload['subject_id'])) {
+                throw ValidationException::withMessages([
+                    'subject_id' => 'Kindergarten 1 and Kindergarten 2 schedules do not use subjects.',
+                ]);
+            }
+
+            $faculty = Faculty::query()
+                ->select(['id', 'user_id'])
+                ->where('user_id', $section->adviser_id)
+                ->first();
+
+            if (! $faculty) {
+                throw ValidationException::withMessages([
+                    'faculty_id' => 'Assign a section adviser who has a teacher roster row before scheduling Kindergarten 1 or 2.',
+                ]);
+            }
+
+            $payload['subject_id'] = null;
+            $payload['faculty_id'] = $faculty->id;
+
+            return $payload;
+        }
+
+        if (empty($payload['subject_id'])) {
+            throw ValidationException::withMessages([
+                'subject_id' => 'Select a subject for this section.',
+            ]);
+        }
+
+        $subjectMatchesGradeLevel = Subject::query()
+            ->whereKey($payload['subject_id'])
+            ->whereIn('subjects.id', function ($subquery) use ($section) {
+                $subquery
+                    ->select('grade_level_subjects.subject_id')
+                    ->from('grade_level_subjects')
+                    ->where('grade_level_subjects.grade_level_id', $section->grade_level_id)
+                    ->whereRaw('grade_level_subjects.id = (
+                        select min(primary_grade_level_subjects.id)
+                        from grade_level_subjects as primary_grade_level_subjects
+                        where primary_grade_level_subjects.subject_id = grade_level_subjects.subject_id
+                    )');
+            })
+            ->exists();
+
+        if (! $subjectMatchesGradeLevel) {
+            throw ValidationException::withMessages([
+                'subject_id' => 'The selected subject is not assigned to the selected section grade level.',
+            ]);
+        }
+
+        if (! empty($payload['faculty_id'])) {
+            $subject = Subject::query()->select(['id', 'department_id'])->findOrFail($payload['subject_id']);
+            $faculty = Faculty::query()->select(['id', 'department_id'])->findOrFail($payload['faculty_id']);
+            $subjectDepartmentId = $subject->department_id;
+            $facultyDepartmentId = $faculty->department_id;
+
+            if ((int) $subjectDepartmentId !== (int) $facultyDepartmentId || ($subjectDepartmentId === null) !== ($facultyDepartmentId === null)) {
+                throw ValidationException::withMessages([
+                    'faculty_id' => 'The selected teacher is not assigned to the selected subject department.',
+                ]);
+            }
+        }
+
+        return $payload;
+>>>>>>> Stashed changes
     }
 
     private function prepare(array $payload): array
@@ -101,12 +176,17 @@ class ClassScheduleController extends Controller
         return [
             'school_year_id' => $payload['school_year_id'] ?? SchoolYear::active()?->id,
             'section_id' => $payload['section_id'],
-            'subject_id' => $payload['subject_id'],
+            'subject_id' => $payload['subject_id'] ?? null,
             'faculty_id' => $payload['faculty_id'] ?? null,
             'day_of_week' => $this->dayToInt($payload['day_of_week'] ?? $payload['day'] ?? 1),
             'time_start' => $this->normalizeTime($payload['time_start']),
             'time_end' => $this->normalizeTime($payload['time_end']),
         ];
+    }
+
+    private function isKindergartenSplitGrade(?string $gradeLevel): bool
+    {
+        return in_array(strtolower((string) $gradeLevel), ['kindergarten 1', 'kindergarten 2'], true);
     }
 
     private function dayToInt($value): int
@@ -141,7 +221,7 @@ class ClassScheduleController extends Controller
             'section_name' => $section?->name,
             'grade_level' => $gradeLevel,
             'subject_id' => $record->subject_id,
-            'subject' => $subject?->name,
+            'subject' => $subject?->name ?? ($this->isKindergartenSplitGrade($gradeLevel) ? 'Kindergarten adviser' : null),
             'faculty_id' => $record->faculty_id,
             'teacher' => $faculty ? trim($faculty->first_name.' '.$faculty->last_name) : null,
             'day_of_week' => $record->day_of_week,

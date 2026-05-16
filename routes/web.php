@@ -43,9 +43,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('role:admin|school_admin')->group(function () {
+<<<<<<< Updated upstream
         Route::get('/SchoolYears', fn() => Inertia::render('SchoolYears'))->name('school-years.index');
         Route::get('/UserManagement', fn() => Inertia::render('UserManagement'))->name('users.index');
         Route::get('/AdminSettings', fn() => Inertia::render('AdminSettings'))->name('admin-settings.index');
+=======
+        Route::get('/UserManagement', fn () => Inertia::render('UserManagement'))->name('users.index');
+        Route::get('/AdminSettings', fn () => Inertia::render('AdminSettings'))->name('admin-settings.index');
+        Route::get('/Departments', fn () => Inertia::render('Departments'))->name('departments.index');
+        Route::get('/QualifyingExam', fn () => Inertia::render('QualifyingExam'))->name('qualifying-exam.index');
+>>>>>>> Stashed changes
     });
 
     Route::middleware('role:admin')->group(function () {

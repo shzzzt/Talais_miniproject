@@ -130,9 +130,35 @@ export default function SchoolYears() {
         title="School Years"
         description="Create, edit dates, activate, delete (when allowed)"
         action={
+<<<<<<< Updated upstream
           <Button onClick={() => setShowForm(true)} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
             <Plus className="w-4 h-4 mr-2" /> New School Year
           </Button>
+=======
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            {canRunRollover && hasAnyYear && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => rolloverMutation.mutate()}
+                disabled={rolloverMutation.isPending}
+                title={
+                  rolloverEligible
+                    ? 'Create the next school year and retire the ended one.'
+                    : 'Runs only after the active year’s end date has passed.'
+                }
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${rolloverMutation.isPending ? 'animate-spin' : ''}`} />
+                Check rollover
+              </Button>
+            )}
+            {!hasAnyYear && (
+              <Button onClick={() => setShowForm(true)} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
+                <Plus className="w-4 h-4 mr-2" /> Initial school year
+              </Button>
+            )}
+          </div>
+>>>>>>> Stashed changes
         }
       />
 
@@ -142,14 +168,20 @@ export default function SchoolYears() {
           title="No school years"
           description="Create your first school year to get started"
           action={
+<<<<<<< Updated upstream
             <Button onClick={() => setShowForm(true)} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
               <Plus className="w-4 h-4 mr-2" /> Create
+=======
+            <Button onClick={() => setShowForm(true)} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
+              <Plus className="w-4 h-4 mr-2" /> Create initial year
+>>>>>>> Stashed changes
             </Button>
           }
         />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {schoolYears.map((sy) => (
+<<<<<<< Updated upstream
             <Card key={sy.id} className={`border-0 shadow-sm ${sy.is_active ? "ring-2 ring-amber-400" : ""}`}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3 gap-2">
@@ -157,6 +189,18 @@ export default function SchoolYears() {
                     <h3 className="font-bold text-slate-800 truncate">{sy.name ?? sy.label}</h3>
                     <p className="text-xs text-slate-400 mt-1">
                       {sy.start_date} — {sy.end_date || "TBD"}
+=======
+            <AccordionItem key={sy.id} value={String(sy.id)} className="border border-slate-200 rounded-xl px-4 bg-white shadow-sm">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-left w-full pr-4">
+                  <div>
+                    <span className="font-bold text-lg text-[var(--theme-primary)]">{sy.name ?? sy.label}</span>
+                    {sy.is_active && (
+                      <Badge className="ml-2 bg-amber-400 text-[var(--theme-primary)]">Active</Badge>
+                    )}
+                    <p className="text-xs text-slate-500 mt-1">
+                      {sy.start_date} — {sy.end_date}
+>>>>>>> Stashed changes
                     </p>
                   </div>
                   <Badge className={statusColors[sy.status] || "bg-slate-100 text-slate-600"}>{sy.status}</Badge>
@@ -196,6 +240,7 @@ export default function SchoolYears() {
                     </Button>
                   )}
                 </div>
+<<<<<<< Updated upstream
                 {sy.is_active && (
                   <div className="mt-2 text-center">
                     <Badge className="bg-amber-400 text-[#1e3a5f]">Active Year</Badge>
@@ -203,6 +248,85 @@ export default function SchoolYears() {
                 )}
               </CardContent>
             </Card>
+=======
+
+                {/* Quarters */}
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                    <BookMarked className="w-4 h-4" /> Quarters
+                  </p>
+                  {(sy.quarters ?? []).length === 0 ? (
+                    <p className="text-xs text-slate-500">No quarters defined for this year.</p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-lg border border-slate-100">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="text-xs">Q#</TableHead>
+                            <TableHead className="text-xs">Name</TableHead>
+                            <TableHead className="text-xs">Start</TableHead>
+                            <TableHead className="text-xs">End</TableHead>
+                            <TableHead className="text-xs">Grading open</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(sy.quarters ?? []).map((q) => (
+                            <TableRow key={q.id}>
+                              <TableCell className="text-sm">{q.quarter_number}</TableCell>
+                              <TableCell className="text-sm">{q.name}</TableCell>
+                              <TableCell className="text-sm">{q.start_date}</TableCell>
+                              <TableCell className="text-sm">{q.end_date}</TableCell>
+                              <TableCell className="text-sm">{q.is_grading_open ? 'Yes' : 'No'}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sections by grade */}
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 mb-2">Sections by grade</p>
+                  {(sy.sections ?? []).length === 0 ? (
+                    <p className="text-xs text-slate-500">No sections for this school year.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {Object.entries(sy.sections_by_grade ?? {}).map(([gradeName, rows]) => (
+                        <div key={gradeName}>
+                          <p className="text-xs font-bold text-[var(--theme-primary)] uppercase tracking-wide mb-2">{gradeName}</p>
+                          <div className="overflow-x-auto rounded-lg border border-slate-100">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="bg-slate-50">
+                                  <TableHead className="text-xs">Section</TableHead>
+                                  <TableHead className="text-xs">Type</TableHead>
+                                  <TableHead className="text-xs">Session</TableHead>
+                                  <TableHead className="text-xs">Capacity</TableHead>
+                                  <TableHead className="text-xs">Adviser</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {(rows ?? []).map((sec) => (
+                                  <TableRow key={sec.id}>
+                                    <TableCell className="text-sm font-medium">{sec.name}</TableCell>
+                                    <TableCell className="text-sm">{sec.type}</TableCell>
+                                    <TableCell className="text-sm">{sec.session}</TableCell>
+                                    <TableCell className="text-sm">{sec.max_capacity ?? '—'}</TableCell>
+                                    <TableCell className="text-sm text-slate-600">{sec.adviser ?? '—'}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+>>>>>>> Stashed changes
           ))}
         </div>
       )}
@@ -242,8 +366,13 @@ export default function SchoolYears() {
             <Button variant="outline" onClick={() => { setShowForm(false); setCreateForm(emptyForm); }}>
               Cancel
             </Button>
+<<<<<<< Updated upstream
             <Button onClick={handleCreateSubmit} disabled={createMutation.isPending} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
               Create
+=======
+            <Button onClick={handleCreateSubmit} disabled={createMutation.isPending} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
+              Save
+>>>>>>> Stashed changes
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -283,8 +412,15 @@ export default function SchoolYears() {
                 </div>
               </div>
               <DialogFooter>
+<<<<<<< Updated upstream
                 <Button variant="outline" onClick={() => setEditForm(null)}>Cancel</Button>
                 <Button onClick={handleEditSubmit} disabled={updateMutation.isPending} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+=======
+                <Button variant="outline" onClick={() => setEditForm(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditSubmit} disabled={updateMutation.isPending} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
+>>>>>>> Stashed changes
                   Save
                 </Button>
               </DialogFooter>

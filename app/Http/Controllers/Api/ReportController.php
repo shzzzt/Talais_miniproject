@@ -12,10 +12,15 @@ use App\Models\SchoolYear;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentGrade;
+use App\Services\Sf9ReportCardService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
+use PhpOffice\PhpSpreadsheet\Writer\Pdf\Dompdf as SpreadsheetDompdf;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
 {
@@ -229,7 +234,7 @@ class ReportController extends Controller
         return $pdf->download($this->pdfFilename('Form137_'.$student->last_name, null, null));
     }
 
-    public function form138(Request $request): Response
+    public function form138(Request $request, Sf9ReportCardService $sf9): BinaryFileResponse
     {
         $request->validate([
             'student_id' => 'required|integer|exists:students,id',
@@ -237,44 +242,25 @@ class ReportController extends Controller
         ]);
         $student = Student::findOrFail($request->integer('student_id'));
 
-        $enrollment = Enrollment::query()
-            ->with(['gradeLevel', 'section.adviser', 'schoolYear'])
-            ->where('student_id', $student->id)
-            ->when($request->filled('school_year_id'), fn ($q) => $q->where('school_year_id', $request->integer('school_year_id')))
-            ->orderByDesc('id')
-            ->firstOrFail();
+        $report = $sf9->buildForStudent(
+            $student->id,
+            $request->filled('school_year_id') ? $request->integer('school_year_id') : null,
+        );
 
-        $grades = StudentGrade::with(['subject', 'quarter'])->where('enrollment_id', $enrollment->id)->get();
-        $rows = [];
-        foreach ($grades as $g) {
-            $name = $g->subject?->name ?? 'Subject';
-            $rows[$name] ??= ['subject' => $name, 'Q1' => null, 'Q2' => null, 'Q3' => null, 'Q4' => null, 'final' => null, 'remarks' => null];
-            $key = 'Q'.$g->quarter?->quarter_number;
-            if (in_array($key, ['Q1','Q2','Q3','Q4'], true)) {
-                $rows[$name][$key] = $g->quarterly_grade;
-            }
-            if ($g->final_grade !== null) {
-                $rows[$name]['final'] = (float) $g->final_grade;
-                $rows[$name]['remarks'] = $g->final_grade >= 75 ? 'Passed' : 'Failed';
-            }
-        }
-        $rowsArr = array_values($rows);
-        $finalsCollected = collect($rowsArr)->pluck('final')->filter()->values();
-        $general = $finalsCollected->count() > 0 ? round((float) $finalsCollected->avg(), 2) : null;
+        $report['spreadsheet']->getActiveSheet()->getPageSetup()
+            ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)
+            ->setPaperSize(PageSetup::PAPERSIZE_A4);
 
-        $attendance = $this->buildAttendanceMatrix($enrollment);
+        File::ensureDirectoryExists(storage_path('app/reports'));
+        $path = storage_path('app/reports/form138_'.uniqid('', true).'.pdf');
+        (new SpreadsheetDompdf($report['spreadsheet']))->save($path);
+        /* Legacy Blade title removed; the filled spreadsheet now drives the PDF layout.
 
-        $pdf = Pdf::loadView('reports.form138', [
             'title' => 'Form 138 — Learner\'s Progress Report',
-            'school' => $this->schoolMeta(),
-            'student' => $student,
-            'enrollment' => $enrollment,
-            'rows' => $rowsArr,
-            'general' => $general,
-            'attendance' => $attendance,
-        ]);
-
-        return $pdf->download($this->pdfFilename('Form138_'.$student->last_name, null, $enrollment->schoolYear));
+        */
+        return response()
+            ->download($path, $this->pdfFilename('Form138_'.$student->last_name, null, $report['enrollment']->schoolYear))
+            ->deleteFileAfterSend();
     }
 
     public function pir(Request $request): Response

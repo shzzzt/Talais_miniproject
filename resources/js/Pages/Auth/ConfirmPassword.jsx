@@ -15,7 +15,7 @@ export default function ConfirmPassword() {
         <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
             <Head title="Confirm Password" />
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-4">
-                <h1 className="text-xl font-black text-[#1e3a5f]">Confirm Password</h1>
+                <h1 className="text-xl font-black text-[var(--theme-primary)]">Confirm Password</h1>
                 <p className="text-sm text-slate-600">
                     This is a secure area. Please confirm your password before continuing.
                 </p>
@@ -34,7 +34,7 @@ export default function ConfirmPassword() {
                         />
                         {errors.password && <p className="text-xs text-red-600">{errors.password}</p>}
                     </div>
-                    <Button type="submit" disabled={processing} className="w-full bg-[#1e3a5f] hover:bg-[#2c5282]">
+                    <Button type="submit" disabled={processing} className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
                         Confirm
                     </Button>
                 </form>

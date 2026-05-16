@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -117,6 +118,22 @@ export default function Attendance() {
     }));
   };
 
+  const setAllAttendance = (status) => {
+    setRows((prev) => {
+      const next = { ...prev };
+      sectionStudents.forEach((student) => {
+        next[student.id] = {
+          ...(next[student.id] ?? {}),
+          am_status: status,
+          pm_status: status,
+          remarks: next[student.id]?.remarks ?? '',
+        };
+      });
+      return next;
+    });
+    toast.message(status === 'present' ? 'Marked everyone present.' : 'Marked everyone absent.');
+  };
+
   const ready = !!sectionId && !!date;
   const summary = useMemo(() => {
     const tally = { present: 0, absent: 0, late: 0, excused: 0 };
@@ -142,7 +159,7 @@ export default function Attendance() {
             <Button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
-              className="bg-[#1e3a5f] hover:bg-[#2c5282]"
+              className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
             >
               <Save className="w-4 h-4 mr-2" />
               {saveMutation.isPending ? 'Saving...' : 'Save Attendance'}
@@ -185,6 +202,12 @@ export default function Attendance() {
                   {s.label}: {summary[s.value]}
                 </Badge>
               ))}
+              <Button type="button" size="sm" variant="outline" onClick={() => setAllAttendance('present')}>
+                All present
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => setAllAttendance('absent')}>
+                All absent
+              </Button>
             </div>
           )}
         </div>
@@ -227,38 +250,26 @@ export default function Attendance() {
                       </TableCell>
                       <TableCell className="text-xs text-slate-500">{s.lrn}</TableCell>
                       <TableCell>
-                        <Select
-                          value={r.am_status}
-                          onValueChange={(v) => setStatus(s.id, 'am_status', v)}
-                        >
-                          <SelectTrigger className="w-32 h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map((o) => (
-                              <SelectItem key={o.value} value={o.value}>
-                                {o.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={r.am_status === 'present'}
+                            onCheckedChange={(checked) => setStatus(s.id, 'am_status', checked ? 'present' : 'absent')}
+                          />
+                          <span className="text-xs text-slate-600">
+                            {r.am_status === 'present' ? 'Present' : 'Absent'}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={r.pm_status}
-                          onValueChange={(v) => setStatus(s.id, 'pm_status', v)}
-                        >
-                          <SelectTrigger className="w-32 h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map((o) => (
-                              <SelectItem key={o.value} value={o.value}>
-                                {o.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={r.pm_status === 'present'}
+                            onCheckedChange={(checked) => setStatus(s.id, 'pm_status', checked ? 'present' : 'absent')}
+                          />
+                          <span className="text-xs text-slate-600">
+                            {r.pm_status === 'present' ? 'Present' : 'Absent'}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Input

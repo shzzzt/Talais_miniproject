@@ -86,7 +86,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {activeYear && (
-        <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2c5282] rounded-2xl p-5 text-white">
+        <div className="rounded-2xl p-5 text-white" style={{ background: 'linear-gradient(90deg, var(--theme-primary), var(--theme-primary-hover))' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white/60 text-xs font-medium uppercase tracking-wider">
@@ -95,7 +95,7 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold mt-1">{activeYear.label}</h2>
               <p className="text-white/60 text-sm mt-1">Musuan Integrated School</p>
             </div>
-            <Badge className="bg-amber-400 text-[#1e3a5f] hover:bg-amber-300 font-semibold">
+            <Badge className="bg-amber-400 text-[var(--theme-primary)] hover:bg-amber-300 font-semibold">
               {activeYear.is_active ? 'Active' : 'Inactive'}
             </Badge>
           </div>
@@ -123,7 +123,7 @@ export default function Dashboard() {
                     <XAxis dataKey="grade_level" tick={{ fontSize: 11 }} hide={gradeLevels.length > 12} />
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#2c5282" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="count" fill="var(--theme-primary-hover)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -154,7 +154,7 @@ export default function Dashboard() {
                     <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                     <YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={90} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#1e3a5f" radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="count" fill="var(--theme-primary)" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -201,7 +201,7 @@ export default function Dashboard() {
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} hide={txDaily.length > 16} />
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#1e3a5f" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="count" fill="var(--theme-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -224,7 +224,7 @@ export default function Dashboard() {
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} hide={userChart.length > 16} />
                       <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                       <Tooltip />
-                      <Line type="monotone" dataKey="count" stroke="#2c5282" strokeWidth={2.5} dot={false} />
+                      <Line type="monotone" dataKey="count" stroke="var(--theme-primary-hover)" strokeWidth={2.5} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -294,7 +294,7 @@ export default function Dashboard() {
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                       <Tooltip />
-                      <Line type="monotone" dataKey="count" stroke="#1e3a5f" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="count" stroke="var(--theme-primary)" strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -304,7 +304,7 @@ export default function Dashboard() {
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                       <Tooltip />
-                      <Line type="monotone" dataKey="count" stroke="#2c5282" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="count" stroke="var(--theme-primary-hover)" strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>

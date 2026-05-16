@@ -12,9 +12,13 @@ use App\Models\GradeLevel;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentGrade;
+use App\Services\Sf9ReportCardService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
@@ -233,56 +237,43 @@ class ReportExcelController extends Controller
         );
     }
 
-    public function form138(Request $request): BinaryFileResponse
+    public function form138(Request $request, Sf9ReportCardService $sf9): BinaryFileResponse
     {
         $request->validate([
             'student_id' => 'required|integer|exists:students,id',
             'school_year_id' => 'sometimes|integer|exists:school_years,id',
         ]);
-        $student = Student::findOrFail($request->integer('student_id'));
 
-        $enrollment = Enrollment::query()
-            ->with(['gradeLevel', 'section.adviser', 'schoolYear'])
-            ->where('student_id', $student->id)
-            ->when($request->filled('school_year_id'), fn ($q) => $q->where('school_year_id', $request->integer('school_year_id')))
-            ->orderByDesc('id')
-            ->firstOrFail();
-
-        $grades = StudentGrade::with(['subject', 'quarter'])->where('enrollment_id', $enrollment->id)->get();
-
-        $headings = ['Subject', 'Q1', 'Q2', 'Q3', 'Q4', 'Final', 'Remarks'];
-
-        $rows = [];
-        $group = [];
-        foreach ($grades as $g) {
-            $name = $g->subject?->name ?? 'Subject';
-            $group[$name] ??= ['subject' => $name, 'Q1' => null, 'Q2' => null, 'Q3' => null, 'Q4' => null, 'final' => null, 'remarks' => null];
-            $key = 'Q'.$g->quarter?->quarter_number;
-            if (in_array($key, ['Q1', 'Q2', 'Q3', 'Q4'], true)) {
-                $group[$name][$key] = $g->quarterly_grade;
-            }
-            if ($g->final_grade !== null) {
-                $group[$name]['final'] = (float) $g->final_grade;
-                $group[$name]['remarks'] = $g->final_grade >= 75 ? 'Passed' : 'Failed';
-            }
-        }
-
-        foreach (array_values($group) as $row) {
-            $rows[] = [
-                $row['subject'],
-                $row['Q1'],
-                $row['Q2'],
-                $row['Q3'],
-                $row['Q4'],
-                $row['final'],
-                $row['remarks'],
-            ];
-        }
-
-        return Excel::download(
-            new HeadingRowsExport($headings, $rows, 'Form138'),
-            $this->excelBasename('Form138_'.$student->last_name, null, $enrollment->schoolYear),
+        $report = $sf9->buildForStudent(
+            $request->integer('student_id'),
+            $request->filled('school_year_id') ? $request->integer('school_year_id') : null,
         );
+
+        File::ensureDirectoryExists(storage_path('app/reports'));
+        $path = storage_path('app/reports/form138_'.uniqid('', true).'.xlsx');
+        (new Xlsx($report['spreadsheet']))->save($path);
+
+        return response()
+            ->download($path, $this->excelBasename('Form138_'.$report['student']->last_name, null, $report['enrollment']->schoolYear))
+            ->deleteFileAfterSend();
+    }
+
+    public function importForm138(Request $request, Sf9ReportCardService $sf9): JsonResponse
+    {
+        $validated = $request->validate([
+            'student_id' => 'required|integer|exists:students,id',
+            'school_year_id' => 'sometimes|integer|exists:school_years,id',
+            'file' => 'required|file|mimes:xlsx,xls',
+        ]);
+
+        $result = $sf9->importForStudent(
+            $request->file('file'),
+            (int) $validated['student_id'],
+            isset($validated['school_year_id']) ? (int) $validated['school_year_id'] : null,
+            $request->user()?->id,
+        );
+
+        return response()->json(['data' => $result]);
     }
 
     public function pir(Request $request): BinaryFileResponse

@@ -145,10 +145,10 @@ class StudentEnrollmentService
                     'school_year_id' => $year->id,
                     'grade_level_id' => $gradeLevel->id,
                     'name' => $sectionName,
+                    'session' => $gradeLevel->usesSessionScheduling() ? 'AM' : 'whole_day',
                 ],
                 [
                     'type' => 'regular',
-                    'session' => 'whole_day',
                     'max_capacity' => 40,
                 ],
             );
@@ -168,6 +168,8 @@ class StudentEnrollmentService
             'is_summer_class' => (bool) ($payload['is_summer_class'] ?? false),
             'enrolled_by' => $userId,
         ]);
+        $enrollment->save();
+        $enrollment->syncClassSessionFromSection();
         $enrollment->save();
     }
 }

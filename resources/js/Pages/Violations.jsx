@@ -103,7 +103,7 @@ export default function Violations() {
         action={
           <div className="flex gap-2">
             <Button variant="outline" onClick={downloadCSV}><Download className="w-4 h-4 mr-2" /> Export</Button>
-            <Button onClick={() => setShowForm(true)} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+            <Button onClick={() => setShowForm(true)} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
               <Plus className="w-4 h-4 mr-2" /> Record Violation
             </Button>
           </div>
@@ -245,7 +245,7 @@ export default function Violations() {
             <Button
               onClick={handleSubmit}
               disabled={!form.student_id || !form.violation_type || createMutation.isPending}
-              className="bg-[#1e3a5f] hover:bg-[#2c5282]"
+              className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
             >
               {createMutation.isPending ? 'Saving...' : 'Save Record'}
             </Button>

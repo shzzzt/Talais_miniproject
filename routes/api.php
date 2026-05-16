@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\AssessmentComponentController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\BackupLogController;
@@ -20,6 +19,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ParentController;
 use App\Http\Controllers\Api\ParentPortalController;
 use App\Http\Controllers\Api\PirReportController;
+use App\Http\Controllers\Api\QualifyingExamController;
 use App\Http\Controllers\Api\QuarterController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ReportExcelController;
@@ -76,7 +76,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('students/import', StudentImportController::class)->name('students.import');
 
     Route::apiResource('class-schedules', ClassScheduleController::class);
-    Route::apiResource('assessment-components', AssessmentComponentController::class);
     Route::apiResource('grades', GradeController::class);
     Route::post('attendance/bulk', [AttendanceController::class, 'bulk'])->name('attendance.bulk');
     Route::get('attendance/summary', [AttendanceController::class, 'summary'])->name('attendance.summary');
@@ -113,11 +112,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('sf5', [ReportExcelController::class, 'sf5'])->name('sf5');
         Route::get('form137', [ReportExcelController::class, 'form137'])->name('form137');
         Route::get('form138', [ReportExcelController::class, 'form138'])->name('form138');
+        Route::post('form138/import', [ReportExcelController::class, 'importForm138'])->name('form138.import');
         Route::get('pir', [ReportExcelController::class, 'pir'])->name('pir');
     });
 
+<<<<<<< Updated upstream
     Route::middleware(['role:admin'])->group(function () {
         Route::get('/dashboard/admin-summary', [DashboardController::class, 'adminSummary'])->name('dashboard.admin-summary');
+=======
+    Route::middleware(['role:admin|school_admin'])->group(function () {
+        Route::put('departments/{department}/assignments', [DepartmentController::class, 'syncAssignments']);
+        Route::apiResource('departments', DepartmentController::class);
+
+        Route::get('qualifying-exams', [QualifyingExamController::class, 'index'])->name('qualifying-exams.index');
+        Route::post('qualifying-exams/bulk-scores', [QualifyingExamController::class, 'bulkScores'])->name('qualifying-exams.bulk-scores');
+        Route::post('qualifying-exams/auto-assign', [QualifyingExamController::class, 'autoAssign'])->name('qualifying-exams.auto-assign');
+    });
+
+    Route::middleware(['role:admin|school_admin'])->group(function () {
+>>>>>>> Stashed changes
         Route::apiResource('users', UserController::class);
         Route::post('users/{user}/restore', [UserController::class, 'restore']);
         Route::post('users/{user}/unlock', [UserController::class, 'unlock']);

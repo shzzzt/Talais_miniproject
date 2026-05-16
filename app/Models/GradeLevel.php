@@ -37,4 +37,18 @@ class GradeLevel extends Model
     {
         return $this->hasMany(Enrollment::class);
     }
+
+    /**
+     * Grades that split learners into morning (AM) vs afternoon (PM) sections (e.g. Kindergarten 1 & 2).
+     */
+    public function usesSessionScheduling(): bool
+    {
+        if ($this->has_session) {
+            return true;
+        }
+
+        $name = mb_strtolower(trim($this->name));
+
+        return $name === 'kindergarten 1' || $name === 'kindergarten 2';
+    }
 }

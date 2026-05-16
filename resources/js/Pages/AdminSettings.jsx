@@ -1,6 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import React, { useState, useRef } from "react";
-import { Settings, Save, School, Calendar, BookOpen, Shield, Bell, Database, FileText, Activity, Upload, Palette, X } from "lucide-react";
+import { Settings, Save, School, Shield, Bell, Database, FileText, Activity, Upload, Palette, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { base44 } from "@/lib/api";
 import PageHeader from "../components/shared/PageHeader";
-import SchoolYearConfig from "../components/settings/SchoolYearConfig";
 import AuditLog from "../components/settings/AuditLog";
 import BackupManagement from "../components/settings/BackupManagement";
 import DocumentTemplates from "../components/settings/DocumentTemplates";
@@ -34,12 +33,18 @@ export default function AdminSettings() {
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    updateSettings({ logoUrl: file_url });
-    toast.success("School logo updated!");
-    setUploading(false);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      updateSettings({ logoUrl: file_url });
+      toast.success("School logo updated!");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to upload school logo.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleRemoveLogo = () => {
@@ -63,15 +68,6 @@ export default function AdminSettings() {
     region: "Region X – Northern Mindanao",
   });
 
-  const [grading, setGrading] = useState({
-    passing_mark: 75,
-    ww_weight_elem: 30,
-    pt_weight_elem: 50,
-    qa_weight_elem: 20,
-    ww_weight_sec: 25,
-    pt_weight_sec: 50,
-    qa_weight_sec: 25,
-  });
 
   const [security, setSecurity] = useState({
     two_factor: true,
@@ -96,22 +92,15 @@ export default function AdminSettings() {
     <div>
       <PageHeader title="System Settings" description="Configure TALAIS system settings and preferences" />
 
-      <Tabs defaultValue="school_year">
+      <Tabs defaultValue="school">
         <TabsList className="mb-5 flex-wrap h-auto gap-1">
-          <TabsTrigger value="school_year"><Calendar className="w-3.5 h-3.5 mr-1" />School Year</TabsTrigger>
           <TabsTrigger value="school"><School className="w-3.5 h-3.5 mr-1" />School Info</TabsTrigger>
-          <TabsTrigger value="grading"><BookOpen className="w-3.5 h-3.5 mr-1" />Grading</TabsTrigger>
           <TabsTrigger value="security"><Shield className="w-3.5 h-3.5 mr-1" />Security</TabsTrigger>
           <TabsTrigger value="notifications"><Bell className="w-3.5 h-3.5 mr-1" />Notifications</TabsTrigger>
           <TabsTrigger value="backup"><Database className="w-3.5 h-3.5 mr-1" />Backup</TabsTrigger>
           <TabsTrigger value="audit"><Activity className="w-3.5 h-3.5 mr-1" />Audit Log</TabsTrigger>
           <TabsTrigger value="templates"><FileText className="w-3.5 h-3.5 mr-1" />Templates</TabsTrigger>
         </TabsList>
-
-        {/* School Year Configuration */}
-        <TabsContent value="school_year">
-          <SchoolYearConfig />
-        </TabsContent>
 
         {/* School Settings */}
         <TabsContent value="school">
@@ -132,8 +121,8 @@ export default function AdminSettings() {
                     <p className="text-sm text-slate-600">Upload your school's official logo. It will appear in the sidebar and printed documents.</p>
                     <p className="text-xs text-slate-400">Recommended: PNG with transparent background, at least 200×200px</p>
                     <div className="flex gap-2 flex-wrap">
-                      <Button size="sm" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploading}>
-                        <Upload className="w-3.5 h-3.5 mr-1" /> {uploading ? "Uploading…" : "Upload Logo"}
+                      <Button size="sm" variant="outline" onClick={() => logoInputRef.current?.click()} isLoading={uploading} loadingText="Uploading...">
+                        <Upload className="w-3.5 h-3.5 mr-1" /> Upload Logo
                       </Button>
                       {schoolSettings.logoUrl && (
                         <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700" onClick={handleRemoveLogo}>
@@ -196,44 +185,6 @@ export default function AdminSettings() {
           </div>
         </TabsContent>
 
-        {/* Grading */}
-        <TabsContent value="grading">
-          <div className="grid sm:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-sm">
-              <CardHeader><CardTitle className="text-sm">Elementary (Kinder – Grade 6)</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Written Works Weight (%)</Label>
-                  <Input type="number" value={grading.ww_weight_elem} onChange={e => setGrading({ ...grading, ww_weight_elem: e.target.value })} className="mt-1" />
-                </div>
-                <div>
-                  <Label>Performance Tasks Weight (%)</Label>
-                  <Input type="number" value={grading.pt_weight_elem} onChange={e => setGrading({ ...grading, pt_weight_elem: e.target.value })} className="mt-1" />
-                </div>
-                <div>
-                  <Label>Quarterly Assessment Weight (%)</Label>
-                  <Input type="number" value={grading.qa_weight_elem} onChange={e => setGrading({ ...grading, qa_weight_elem: e.target.value })} className="mt-1" />
-                </div>
-                <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-500">
-                  Total: {Number(grading.ww_weight_elem) + Number(grading.pt_weight_elem) + Number(grading.qa_weight_elem)}% (must equal 100%)
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-sm">
-              <CardHeader><CardTitle className="text-sm">General Settings</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Passing Mark</Label>
-                  <Input type="number" value={grading.passing_mark} onChange={e => setGrading({ ...grading, passing_mark: e.target.value })} className="mt-1" />
-                  <p className="text-xs text-slate-400 mt-1">DepEd standard: 75</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          <Button onClick={() => handleSave("Grading")} className="mt-5 bg-[#1e3a5f] hover:bg-[#2c5282]">
-            <Save className="w-4 h-4 mr-2" /> Save Grading Settings
-          </Button>
-        </TabsContent>
 
         {/* Security */}
         <TabsContent value="security">
@@ -260,7 +211,7 @@ export default function AdminSettings() {
                 <div><Label>Min Password Length</Label>
                   <Input type="number" value={security.password_min} onChange={e => setSecurity({ ...security, password_min: e.target.value })} className="mt-1" /></div>
               </div>
-              <Button onClick={() => handleSave("Security")} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+              <Button onClick={() => handleSave("Security")} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
                 <Save className="w-4 h-4 mr-2" /> Save Security Settings
               </Button>
             </CardContent>
@@ -290,7 +241,7 @@ export default function AdminSettings() {
                 <div><Label>SMTP Host</Label><Input value={notif.email_smtp} onChange={e => setNotif({ ...notif, email_smtp: e.target.value })} className="mt-1" /></div>
                 <div><Label>SMTP Port</Label><Input value={notif.smtp_port} onChange={e => setNotif({ ...notif, smtp_port: e.target.value })} className="mt-1" /></div>
               </div>
-              <Button onClick={() => handleSave("Notification")} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+              <Button onClick={() => handleSave("Notification")} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
                 <Save className="w-4 h-4 mr-2" /> Save Notification Settings
               </Button>
             </CardContent>

@@ -42,6 +42,7 @@ const emptyEnrollmentForm = {
   school_year_id: "",
   grade_level_id: "",
   section_id: "",
+  class_session: "",
   enrollment_date: new Date().toISOString().slice(0, 10),
   enrollment_type: "new",
   status: "enrolled",
@@ -54,6 +55,7 @@ export default function Enrollment() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [closingForm, setClosingForm] = useState(false);
   const [form, setForm] = useState(emptyEnrollmentForm);
   const [studentSearch, setStudentSearch] = useState("");
   const [lrnLookup, setLrnLookup] = useState("");
@@ -100,7 +102,7 @@ export default function Enrollment() {
   });
 
   const { data: sections = [] } = useQuery({
-    queryKey: ["sections", selectedYearId, form.grade_level_id],
+    queryKey: ["sections", selectedYearId, form.grade_level_id, form.class_session],
     queryFn: () =>
       base44.entities.Section.filter({
         school_year_id: selectedYearId,
@@ -108,6 +110,23 @@ export default function Enrollment() {
       }),
     enabled: !!selectedYearId && !!form.grade_level_id,
   });
+
+  const selectedGrade = useMemo(
+    () => gradeLevels.find((g) => String(g.id) === String(form.grade_level_id)),
+    [gradeLevels, form.grade_level_id],
+  );
+
+  const gradeNeedsSession = useMemo(() => {
+    if (!selectedGrade) return false;
+    if (selectedGrade.has_session) return true;
+    const n = (selectedGrade.name || "").toLowerCase();
+    return n === "kindergarten 1" || n === "kindergarten 2";
+  }, [selectedGrade]);
+
+  const sectionsForForm = useMemo(() => {
+    if (!gradeNeedsSession || !form.class_session) return sections;
+    return sections.filter((s) => s.session === form.class_session);
+  }, [sections, gradeNeedsSession, form.class_session]);
 
   const createMutation = useMutation({
     mutationFn: (payload) => base44.entities.Enrollment.create(payload),
@@ -156,6 +175,19 @@ export default function Enrollment() {
     setLrnLookup("");
   };
 
+  const formBusy = createMutation.isPending || updateMutation.isPending || closingForm;
+
+  const closeForm = () => {
+    if (formBusy) return;
+    setClosingForm(true);
+    window.setTimeout(() => {
+      setFormOpen(false);
+      resetForm();
+      setClosingForm(false);
+      toast.message("Enrollment form closed");
+    }, 150);
+  };
+
   const openCreate = () => {
     resetForm();
     setForm((f) => ({ ...f, school_year_id: selectedYearId || "" }));
@@ -170,6 +202,7 @@ export default function Enrollment() {
       school_year_id: String(row.school_year_id ?? ""),
       grade_level_id: String(row.grade_level_id ?? row.grade_level?.id ?? ""),
       section_id: sid ? String(sid) : "",
+      class_session: row.class_session || "",
       enrollment_date: (row.enrollment_date || "").toString().slice(0, 10),
       enrollment_type: row.enrollment_type ?? "new",
       status: row.status ?? "enrolled",
@@ -188,6 +221,16 @@ export default function Enrollment() {
     };
     if (form.section_id) payload.section_id = Number(form.section_id);
     else payload.section_id = null;
+
+    if (gradeNeedsSession) {
+      if (!form.class_session) {
+        toast.error("Select morning or afternoon schedule for Kindergarten 1 / 2.");
+        return;
+      }
+      payload.class_session = form.class_session;
+    } else {
+      payload.class_session = null;
+    }
 
     if (!payload.student_id || !payload.school_year_id || !payload.grade_level_id || !payload.enrollment_date) {
       toast.error("Student, school year, grade, and enrollment date are required.");
@@ -250,7 +293,7 @@ export default function Enrollment() {
         title="Enrollment"
         description="Section cards, enrolment ledger, continuing LRN lookup"
         action={
-          <Button onClick={openCreate} className="bg-[#1e3a5f] hover:bg-[#2c5282]" disabled={!selectedYearId}>
+          <Button onClick={openCreate} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]" disabled={!selectedYearId}>
             <Plus className="w-4 h-4 mr-2" /> Add enrollment
           </Button>
         }
@@ -269,15 +312,15 @@ export default function Enrollment() {
             <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group h-full">
               <CardContent className="p-5 flex flex-col justify-between h-full">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-[#1e3a5f]/10 flex items-center justify-center mb-3">
-                    <link.icon className="w-5 h-5 text-[#1e3a5f]" />
+                  <div className="w-10 h-10 rounded-xl bg-[var(--theme-primary)]/10 flex items-center justify-center mb-3">
+                    <link.icon className="w-5 h-5 text-[var(--theme-primary)]" />
                   </div>
                   <h3 className="font-bold text-slate-800">{link.title}</h3>
                   <p className="text-xs text-slate-400 mt-1">{link.description}</p>
                 </div>
                 <div className="flex items-center justify-between mt-4">
-                  <span className="text-lg font-bold text-[#1e3a5f]">{link.count}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#1e3a5f] group-hover:translate-x-1 transition-all" />
+                  <span className="text-lg font-bold text-[var(--theme-primary)]">{link.count}</span>
+                  <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[var(--theme-primary)] group-hover:translate-x-1 transition-all" />
                 </div>
               </CardContent>
             </Card>
@@ -357,7 +400,7 @@ export default function Enrollment() {
                       <TableCell>
                         <Link
                           href={`/StudentProfile/${stu.id ?? row.student_id}`}
-                          className="text-sm font-medium text-[#1e3a5f] hover:underline"
+                          className="text-sm font-medium text-[var(--theme-primary)] hover:underline"
                         >
                           {name}
                         </Link>
@@ -396,8 +439,7 @@ export default function Enrollment() {
         open={formOpen}
         onOpenChange={(o) => {
           if (!o) {
-            setFormOpen(false);
-            resetForm();
+            closeForm();
           }
         }}
       >
@@ -425,8 +467,8 @@ export default function Enrollment() {
                     onChange={(e) => setLrnLookup(e.target.value.replace(/\D/g, "").slice(0, 12))}
                     className="font-mono"
                   />
-                  <Button type="button" variant="outline" disabled={lookupLoading} onClick={runLrnLookup}>
-                    {lookupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Lookup"}
+                  <Button type="button" variant="outline" isLoading={lookupLoading} loadingText="Looking..." onClick={runLrnLookup}>
+                    Lookup
                   </Button>
                 </div>
               </div>
@@ -479,7 +521,21 @@ export default function Enrollment() {
               <Label>Grade level</Label>
               <Select
                 value={String(form.grade_level_id || "")}
-                onValueChange={(v) => setForm((f) => ({ ...f, grade_level_id: v, section_id: "" }))}
+                onValueChange={(v) =>
+                  setForm((f) => {
+                    const g = gradeLevels.find((x) => String(x.id) === v);
+                    const needs =
+                      g &&
+                      (g.has_session ||
+                        ["kindergarten 1", "kindergarten 2"].includes((g.name || "").toLowerCase()));
+                    return {
+                      ...f,
+                      grade_level_id: v,
+                      section_id: "",
+                      class_session: needs ? f.class_session || "AM" : "",
+                    };
+                  })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select grade" />
@@ -493,6 +549,26 @@ export default function Enrollment() {
                 </SelectContent>
               </Select>
             </div>
+            {gradeNeedsSession && (
+              <div>
+                <Label>Learner schedule (Kinder 1 / 2)</Label>
+                <Select
+                  value={form.class_session || "AM"}
+                  onValueChange={(v) => setForm((f) => ({ ...f, class_session: v, section_id: "" }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Schedule" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AM">Morning (AM)</SelectItem>
+                    <SelectItem value="PM">Afternoon (PM)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Sections list only shows classes that match this schedule.
+                </p>
+              </div>
+            )}
             <div>
               <Label>Section (optional)</Label>
               <Select
@@ -504,9 +580,10 @@ export default function Enrollment() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— None —</SelectItem>
-                  {sections.map((s) => (
+                  {sectionsForForm.map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       {s.name}
+                      {s.session && s.session !== "whole_day" ? ` (${s.session})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -553,17 +630,29 @@ export default function Enrollment() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setFormOpen(false); resetForm(); }}>
+            <Button
+              variant="outline"
+              onClick={closeForm}
+              isLoading={closingForm}
+              loadingText="Closing..."
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               Cancel
             </Button>
-            <Button onClick={submitForm} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+            <Button
+              onClick={submitForm}
+              isLoading={createMutation.isPending || updateMutation.isPending}
+              loadingText={editing ? "Updating..." : "Saving..."}
+              disabled={closingForm}
+              className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
+            >
               {editing ? "Update" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog open={!!deleteId} onOpenChange={() => { if (!deleteMutation.isPending) setDeleteId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove enrollment?</AlertDialogTitle>
@@ -572,9 +661,14 @@ export default function Enrollment() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteMutation.mutate(deleteId)}>
-              Delete
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate(deleteId)}
+            >
+              {deleteMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

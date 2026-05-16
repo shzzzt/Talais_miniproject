@@ -117,7 +117,7 @@ export default function ParentPortal() {
       <Card className="border-0 shadow-sm mb-6">
         <CardContent className="p-5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#1e3a5f] flex items-center justify-center shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--theme-primary)] flex items-center justify-center shrink-0">
               <span className="text-2xl font-black text-white">{(child.student.first_name || '?')[0]}</span>
             </div>
             <div className="flex-1">
@@ -212,7 +212,7 @@ export default function ParentPortal() {
                       <TableCell className={`text-center font-black text-base ${gradeColor(genAvg)}`}>{genAvg}</TableCell>
                       <TableCell>
                         <Badge className={genAvg >= 75 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}>
-                          {genAvg >= 75 ? "Promoted" : "Retained"}
+                          {genAvg >= 75 ? "Passed" : "Failed"}
                         </Badge>
                       </TableCell>
                     </TableRow>

@@ -2,15 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\Grading\ComputeQuarterlyGrade;
 use App\Http\Controllers\Controller;
-use App\Models\AssessmentComponent;
 use App\Models\Enrollment;
 use App\Models\Quarter;
-use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentGrade;
-use App\Models\Subject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,10 +14,6 @@ use Illuminate\Support\Facades\Validator;
 
 class GradeController extends Controller
 {
-    public function __construct(private readonly ComputeQuarterlyGrade $compute)
-    {
-    }
-
     public function index(Request $request): JsonResponse
     {
         $query = StudentGrade::query()
@@ -105,12 +97,8 @@ class GradeController extends Controller
             'subject_id' => 'required|integer|exists:subjects,id',
             'quarter' => 'sometimes|string',
             'quarter_id' => 'sometimes|integer|exists:quarters,id',
-            'written_work_score' => 'nullable|numeric|min:0',
-            'written_work_total' => 'nullable|numeric|min:0',
-            'performance_task_score' => 'nullable|numeric|min:0',
-            'performance_task_total' => 'nullable|numeric|min:0',
-            'quarterly_exam_score' => 'nullable|numeric|min:0',
-            'quarterly_exam_total' => 'nullable|numeric|min:0',
+            'quarterly_grade' => 'required_without:final_grade|numeric|min:0|max:100',
+            'final_grade' => 'nullable|numeric|min:0|max:100',
             'is_locked' => 'sometimes|boolean',
             'remarks' => 'sometimes|string|max:32',
         ])->validate();
@@ -123,63 +111,28 @@ class GradeController extends Controller
 
         $enrollment = Enrollment::with('schoolYear')->findOrFail($enrollmentId);
         $subjectId = (int) $payload['subject_id'];
+        $gradeValue = array_key_exists('quarterly_grade', $payload)
+            ? (float) $payload['quarterly_grade']
+            : (float) $payload['final_grade'];
 
-        $this->writeAssessmentComponents($enrollment->id, $subjectId, $quarterId, $payload, $userId);
+        $grade = StudentGrade::updateOrCreate(
+            [
+                'enrollment_id' => $enrollment->id,
+                'subject_id' => $subjectId,
+                'quarter_id' => $quarterId,
+            ],
+            [
+                'quarterly_grade' => $gradeValue,
+                'final_grade' => $gradeValue,
+                'remarks' => $payload['remarks'] ?? ($gradeValue >= 75 ? 'Passed' : 'Failed'),
+                'is_locked' => (bool) ($payload['is_locked'] ?? false),
+                'encoded_by' => $userId,
+            ],
+        );
 
-        $result = $this->compute->execute($enrollment->id, $subjectId, $quarterId, $userId);
-        $grade = StudentGrade::with(['enrollment.student', 'enrollment.section', 'subject', 'quarter'])
-            ->where('enrollment_id', $enrollment->id)
-            ->where('subject_id', $subjectId)
-            ->where('quarter_id', $quarterId)
-            ->firstOrFail();
-
-        if (array_key_exists('is_locked', $payload)) {
-            $grade->is_locked = (bool) $payload['is_locked'];
-            $grade->save();
-        }
-
-        $this->compute->recomputeFinal($enrollment->id, $subjectId, $userId);
+        $this->recomputeFinal($enrollment->id, $subjectId, $userId);
 
         return $grade->refresh()->load(['enrollment.student', 'enrollment.section', 'subject', 'quarter']);
-    }
-
-    private function writeAssessmentComponents(int $enrollmentId, int $subjectId, int $quarterId, array $payload, ?int $userId): void
-    {
-        $components = [
-            'written_work' => [
-                'score' => $payload['written_work_score'] ?? null,
-                'total' => $payload['written_work_total'] ?? null,
-            ],
-            'performance_task' => [
-                'score' => $payload['performance_task_score'] ?? null,
-                'total' => $payload['performance_task_total'] ?? null,
-            ],
-            'quarterly_assessment' => [
-                'score' => $payload['quarterly_exam_score'] ?? null,
-                'total' => $payload['quarterly_exam_total'] ?? null,
-            ],
-        ];
-
-        foreach ($components as $type => $values) {
-            if ($values['score'] === null || $values['total'] === null || (float) $values['total'] <= 0) {
-                continue;
-            }
-
-            AssessmentComponent::updateOrCreate(
-                [
-                    'enrollment_id' => $enrollmentId,
-                    'subject_id' => $subjectId,
-                    'quarter_id' => $quarterId,
-                    'component_type' => $type,
-                    'item_number' => 1,
-                ],
-                [
-                    'score' => (float) $values['score'],
-                    'highest_possible_score' => (float) $values['total'],
-                    'encoded_by' => $userId,
-                ],
-            );
-        }
     }
 
     private function resolveEnrollmentId(array $payload): int
@@ -233,9 +186,6 @@ class GradeController extends Controller
         $subject = $grade->subject;
         $section = $grade->enrollment?->section;
         $quarter = $grade->quarter;
-        $ww = $this->scoresFromPs($grade->written_work_ps);
-        $pt = $this->scoresFromPs($grade->performance_task_ps);
-        $qa = $this->scoresFromPs($grade->quarterly_assessment_ps);
 
         return [
             'id' => $grade->id,
@@ -250,15 +200,6 @@ class GradeController extends Controller
             'grade_level' => $grade->enrollment?->gradeLevel?->name,
             'quarter_id' => $grade->quarter_id,
             'quarter' => $quarter ? ('Q'.$quarter->quarter_number) : null,
-            'written_work_ps' => $grade->written_work_ps,
-            'performance_task_ps' => $grade->performance_task_ps,
-            'quarterly_assessment_ps' => $grade->quarterly_assessment_ps,
-            'written_work_score' => $ww['score'],
-            'written_work_total' => $ww['total'],
-            'performance_task_score' => $pt['score'],
-            'performance_task_total' => $pt['total'],
-            'quarterly_exam_score' => $qa['score'],
-            'quarterly_exam_total' => $qa['total'],
             'quarterly_grade' => $grade->quarterly_grade,
             'final_grade' => $grade->final_grade,
             'remarks' => $grade->remarks,
@@ -269,12 +210,27 @@ class GradeController extends Controller
         ];
     }
 
-    private function scoresFromPs(?float $ps): array
+    private function recomputeFinal(int $enrollmentId, int $subjectId, ?int $userId = null): ?float
     {
-        if ($ps === null) {
-            return ['score' => null, 'total' => null];
+        $grades = StudentGrade::where('enrollment_id', $enrollmentId)
+            ->where('subject_id', $subjectId)
+            ->whereNotNull('quarterly_grade')
+            ->pluck('quarterly_grade');
+
+        if ($grades->count() === 0) {
+            return null;
         }
 
-        return ['score' => round($ps, 2), 'total' => 100];
+        $final = round($grades->avg(), 2);
+
+        StudentGrade::where('enrollment_id', $enrollmentId)
+            ->where('subject_id', $subjectId)
+            ->update([
+                'final_grade' => $final,
+                'validated_by' => $userId,
+                'validated_at' => now(),
+            ]);
+
+        return $final;
     }
 }

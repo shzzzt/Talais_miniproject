@@ -22,7 +22,7 @@ export default function ResetPassword({ token, email }) {
             <Head title="Reset Password" />
             <Card className="w-full max-w-md border-0 shadow-xl">
                 <CardContent className="p-8 space-y-6">
-                    <h1 className="text-2xl font-black text-[#1e3a5f] text-center">Set New Password</h1>
+                    <h1 className="text-2xl font-black text-[var(--theme-primary)] text-center">Set New Password</h1>
 
                     <form onSubmit={submit} className="space-y-4">
                         <div className="space-y-1.5">
@@ -63,7 +63,7 @@ export default function ResetPassword({ token, email }) {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="w-full bg-[#1e3a5f] hover:bg-[#2c5282]"
+                            className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
                         >
                             {processing ? 'Saving…' : 'Reset Password'}
                         </Button>

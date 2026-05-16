@@ -82,6 +82,7 @@ class DatabaseSeeder extends Seeder
         SchoolYear::where('id', '!=', $sy->id)->update(['is_active' => false]);
 
         $gradeLevels = [
+<<<<<<< Updated upstream
             ['name' => 'Kindergarten', 'level_order' => 0, 'is_departmentalized' => false, 'has_session' => true],
             ['name' => 'Grade 1', 'level_order' => 1, 'is_departmentalized' => false],
             ['name' => 'Grade 2', 'level_order' => 2, 'is_departmentalized' => false],
@@ -93,6 +94,16 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Grade 8', 'level_order' => 8, 'is_departmentalized' => true],
             ['name' => 'Grade 9', 'level_order' => 9, 'is_departmentalized' => true],
             ['name' => 'Grade 10', 'level_order' => 10, 'is_departmentalized' => true],
+=======
+            ['name' => 'Kindergarten 1', 'level_order' => 0, 'is_departmentalized' => false, 'has_session' => true],
+            ['name' => 'Kindergarten 2', 'level_order' => 1, 'is_departmentalized' => false, 'has_session' => true],
+            ['name' => 'Grade 1', 'level_order' => 2, 'is_departmentalized' => false],
+            ['name' => 'Grade 2', 'level_order' => 3, 'is_departmentalized' => false],
+            ['name' => 'Grade 3', 'level_order' => 4, 'is_departmentalized' => false],
+            ['name' => 'Grade 4', 'level_order' => 5, 'is_departmentalized' => false],
+            ['name' => 'Grade 5', 'level_order' => 6, 'is_departmentalized' => false],
+            ['name' => 'Grade 6', 'level_order' => 7, 'is_departmentalized' => false],
+>>>>>>> Stashed changes
         ];
         foreach ($gradeLevels as $gl) {
             GradeLevel::firstOrCreate(['name' => $gl['name']], $gl);

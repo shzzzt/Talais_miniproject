@@ -13,7 +13,7 @@ export default function VerifyEmail({ status }) {
         <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
             <Head title="Verify Email" />
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-4">
-                <h1 className="text-2xl font-black text-[#1e3a5f]">Verify your email</h1>
+                <h1 className="text-2xl font-black text-[var(--theme-primary)]">Verify your email</h1>
                 <p className="text-sm text-slate-600 leading-relaxed">
                     Thanks for signing up. Before getting started, please verify your email by
                     clicking the link in the message we just sent you. Didn&apos;t receive it?
@@ -25,7 +25,7 @@ export default function VerifyEmail({ status }) {
                     </div>
                 )}
                 <form onSubmit={submit} className="flex items-center justify-between">
-                    <Button type="submit" disabled={processing} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
+                    <Button type="submit" disabled={processing} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
                         Resend Verification Email
                     </Button>
                     <Link

@@ -16,6 +16,32 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+<<<<<<< Updated upstream
+=======
+        $user = $this->user();
+
+        if ($user->isParent()) {
+            return [
+                'name' => ['required', 'string', 'max:255'],
+                'email' => [
+                    'nullable',
+                    'string',
+                    'lowercase',
+                    'email',
+                    'max:255',
+                    Rule::unique(User::class)->ignore($user->id),
+                ],
+                'phone_number' => [
+                    'nullable',
+                    'string',
+                    'max:20',
+                    Rule::unique('users', 'phone_number')->ignore($user->id),
+                ],
+                'avatar' => ['nullable', 'string', 'max:500'],
+            ];
+        }
+
+>>>>>>> Stashed changes
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -26,6 +52,7 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'avatar' => ['nullable', 'string', 'max:500'],
         ];
     }
 }
