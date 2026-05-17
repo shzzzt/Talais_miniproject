@@ -57,12 +57,16 @@ class DatabaseSeeder extends Seeder
             ['email' => 'parent@talais.test'],
             [
                 'name' => 'Sample Parent',
+                'phone_number' => '09171234567',
                 'password' => Hash::make('password'),
                 'role' => 'parent',
                 'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
+        if (! $parent->phone_number) {
+            $parent->forceFill(['phone_number' => '09171234567'])->save();
+        }
         $parent->syncRoles(['parent']);
 
         $sy = SchoolYear::firstOrCreate(

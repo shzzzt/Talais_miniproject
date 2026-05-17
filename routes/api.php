@@ -149,16 +149,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::middleware(['role:admin|school_admin'])->group(function () {
-    Route::middleware(['role:admin|school_admin'])->group(function () {
         Route::put('departments/{department}/assignments', [DepartmentController::class, 'syncAssignments']);
         Route::apiResource('departments', DepartmentController::class);
-    });
 
-    Route::middleware(['role:admin|school_admin'])->group(function () {
         Route::apiResource('users', UserController::class);
         Route::post('users/{user}/restore', [UserController::class, 'restore']);
         Route::post('users/{user}/unlock', [UserController::class, 'unlock']);
-        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword']);
     });
 
     Route::middleware(['role:admin'])->group(function () {

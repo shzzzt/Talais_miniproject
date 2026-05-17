@@ -57,8 +57,6 @@ function enrollmentDisplayName(e) {
   const parts = [s.last_name, s.first_name, s.middle_name].filter(Boolean);
   return parts.join(", ") || "—";
 }
-const GRADE_LEVELS = ["Kindergarten","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6"];
-
 export default function Sections() {
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);

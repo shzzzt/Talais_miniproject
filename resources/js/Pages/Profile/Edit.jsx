@@ -1,12 +1,13 @@
 import AppLayout from '@/Layouts/AppLayout';
 import React, { useRef, useState } from 'react';
 import { router, useForm, usePage } from '@inertiajs/react';
-import { Camera, Save, User } from 'lucide-react';
+import { Camera, KeyRound, Save, Shield, User } from 'lucide-react';
 import { base44 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import PageHeader from '@/components/shared/PageHeader';
 import { toast } from 'sonner';
 
@@ -21,6 +22,13 @@ export default function EditProfile({ mustVerifyEmail, status }) {
     email: user.email ?? '',
     phone_number: user.phone_number ?? '',
     avatar: user.avatar ?? '',
+    two_factor_enabled: !!user.two_factor_enabled,
+  });
+
+  const passwordForm = useForm({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
   });
 
   const submit = (event) => {
@@ -46,6 +54,7 @@ export default function EditProfile({ mustVerifyEmail, status }) {
         email: data.email,
         phone_number: data.phone_number,
         avatar: file_url,
+        two_factor_enabled: data.two_factor_enabled,
       }, {
         preserveScroll: true,
         onSuccess: () => toast.success('Profile picture updated'),
@@ -65,10 +74,41 @@ export default function EditProfile({ mustVerifyEmail, status }) {
       email: data.email,
       phone_number: data.phone_number,
       avatar: '',
+      two_factor_enabled: data.two_factor_enabled,
     }, {
       preserveScroll: true,
       onSuccess: () => toast.success('Profile picture removed'),
       onError: () => toast.error('Failed to remove profile picture.'),
+    });
+  };
+
+  const toggleTwoFactor = (enabled) => {
+    setData('two_factor_enabled', enabled);
+    router.patch('/profile', {
+      name: data.name,
+      email: data.email,
+      phone_number: data.phone_number,
+      avatar: data.avatar,
+      two_factor_enabled: enabled,
+    }, {
+      preserveScroll: true,
+      onSuccess: () => toast.success(enabled ? 'Two-factor verification enabled' : 'Two-factor verification disabled'),
+      onError: () => {
+        setData('two_factor_enabled', !enabled);
+        toast.error('Failed to update two-factor verification.');
+      },
+    });
+  };
+
+  const updatePassword = (event) => {
+    event.preventDefault();
+    passwordForm.put('/password', {
+      preserveScroll: true,
+      onSuccess: () => {
+        passwordForm.reset();
+        toast.success('Password updated');
+      },
+      onError: () => toast.error('Please check the password fields.'),
     });
   };
 
@@ -136,6 +176,77 @@ export default function EditProfile({ mustVerifyEmail, status }) {
               </Button>
               {recentlySuccessful && <span className="text-xs text-emerald-600">Saved.</span>}
             </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Shield className="w-4 h-4" /> Two-Factor Verification
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
+            <div>
+              <p className="text-sm font-medium text-slate-800">Email OTP on sign in</p>
+              <p className="text-xs text-slate-500">When enabled, this account must verify a one-time code after entering the password.</p>
+            </div>
+            <Switch checked={data.two_factor_enabled} onCheckedChange={toggleTwoFactor} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <KeyRound className="w-4 h-4" /> Change Password
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={updatePassword} className="space-y-4 max-w-xl">
+            <div>
+              <Label>Current Password</Label>
+              <Input
+                className="mt-1"
+                type="password"
+                value={passwordForm.data.current_password}
+                onChange={(event) => passwordForm.setData('current_password', event.target.value)}
+                autoComplete="current-password"
+              />
+              {passwordForm.errors.current_password && <p className="text-xs text-red-600 mt-1">{passwordForm.errors.current_password}</p>}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>New Password</Label>
+                <Input
+                  className="mt-1"
+                  type="password"
+                  value={passwordForm.data.password}
+                  onChange={(event) => passwordForm.setData('password', event.target.value)}
+                  autoComplete="new-password"
+                />
+                {passwordForm.errors.password && <p className="text-xs text-red-600 mt-1">{passwordForm.errors.password}</p>}
+              </div>
+              <div>
+                <Label>Confirm New Password</Label>
+                <Input
+                  className="mt-1"
+                  type="password"
+                  value={passwordForm.data.password_confirmation}
+                  onChange={(event) => passwordForm.setData('password_confirmation', event.target.value)}
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+            <Button
+              type="submit"
+              className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
+              isLoading={passwordForm.processing}
+              loadingText="Updating..."
+            >
+              <Save className="w-4 h-4 mr-2" /> Update Password
+            </Button>
           </form>
         </CardContent>
       </Card>

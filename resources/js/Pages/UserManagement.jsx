@@ -1,6 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import React, { useState } from "react";
-import { Plus, Search, Edit2, Trash2, Unlock, KeyRound } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
 import PageHeader from "../components/shared/PageHeader";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { http } from "@/lib/api";
@@ -30,7 +29,6 @@ const emptyForm = {
     role: "faculty",
     status: "active",
     phone_number: "",
-    two_factor_enabled: false,
     password: "",
     password_confirmation: "",
 };
@@ -110,20 +108,6 @@ export default function UserManagement() {
         },
     });
 
-    const resetPasswordMutation = useMutation({
-        mutationFn: async (id) => {
-            const { data } = await http.post(`/users/${id}/reset-password`, {
-                return_password: true,
-            });
-            return data?.data;
-        },
-        onSuccess: (data) => {
-            toast.success(`Temporary password: ${data?.temporary_password ?? "set"}`, {
-                duration: 10_000,
-            });
-        },
-    });
-
     const handleSubmit = () => {
         const payload = {
             name: form.name,
@@ -131,9 +115,8 @@ export default function UserManagement() {
             role: form.role,
             status: form.status,
             phone_number: form.phone_number || null,
-            two_factor_enabled: !!form.two_factor_enabled,
         };
-        if (form.password) {
+        if (!editing && form.password) {
             payload.password = form.password;
             payload.password_confirmation = form.password_confirmation || form.password;
         }
@@ -150,7 +133,6 @@ export default function UserManagement() {
             role: u.role ?? "faculty",
             status: u.status ?? "active",
             phone_number: u.phone_number ?? "",
-            two_factor_enabled: !!u.two_factor_enabled,
         });
         setShowForm(true);
     };
@@ -314,18 +296,6 @@ export default function UserManagement() {
                                                 variant="ghost"
                                                 className="h-7 w-7"
                                                 onClick={() => {
-                                                    if (confirm(`Reset password for ${u.email}?`))
-                                                        resetPasswordMutation.mutate(u.id);
-                                                }}
-                                                title="Reset password"
-                                            >
-                                                <KeyRound className="w-3 h-3 text-slate-500" />
-                                            </Button>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-7 w-7"
-                                                onClick={() => {
                                                     if (confirm(`Deactivate ${u.email}?`))
                                                         deleteMutation.mutate(u.id);
                                                 }}
@@ -406,38 +376,28 @@ export default function UserManagement() {
                                 onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
                             />
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                            <div>
-                                <p className="text-sm font-medium">Two-Factor Authentication</p>
-                                <p className="text-xs text-slate-400">
-                                    Require email OTP on every login.
-                                </p>
+                        {!editing && (
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label>Password</Label>
+                                    <Input
+                                        type="password"
+                                        value={form.password}
+                                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Confirm password</Label>
+                                    <Input
+                                        type="password"
+                                        value={form.password_confirmation}
+                                        onChange={(e) =>
+                                            setForm({ ...form, password_confirmation: e.target.value })
+                                        }
+                                    />
+                                </div>
                             </div>
-                            <Switch
-                                checked={form.two_factor_enabled}
-                                onCheckedChange={(v) => setForm({ ...form, two_factor_enabled: v })}
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <Label>{editing ? "New password (optional)" : "Password"}</Label>
-                                <Input
-                                    type="password"
-                                    value={form.password}
-                                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <Label>Confirm password</Label>
-                                <Input
-                                    type="password"
-                                    value={form.password_confirmation}
-                                    onChange={(e) =>
-                                        setForm({ ...form, password_confirmation: e.target.value })
-                                    }
-                                />
-                            </div>
-                        </div>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={closeForm}>

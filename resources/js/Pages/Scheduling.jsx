@@ -71,36 +71,7 @@ export default function Scheduling() {
   const adviserFaculty = isKinderSection
     ? faculty.find(f => Number(f.user_id) === Number(selectedSectionObj?.adviser_id))
     : null;
-
-  
-  // Get the selected section object to find its grade level
-  const selectedSectionObj = sections.find(s => String(s.id) === form.section_id);
-  const selectedGradeLevel = selectedSectionObj?.grade_level;
-  const selectedGradeLevelId = selectedSectionObj?.grade_level_id;
-  
-  // Fetch subjects filtered by the selected section's grade level
-  const { data: subjects = [], isFetching: isFetchingSubjects } = useQuery({
-    queryKey: ["subjects-by-grade", selectedGradeLevelId],
-    queryFn: async () => {
-      if (!selectedGradeLevelId) {
-        return []; // Return empty array if no grade level selected
-      }
-      try {
-        const result = await base44.entities.Subject.filter({ primary_grade_level_id: selectedGradeLevelId });
-        return Array.isArray(result) ? result : (result?.data ?? []);
-      } catch (err) {
-        console.error('Error fetching subjects:', err);
-        return [];
-      }
-    },
-    enabled: !!selectedGradeLevelId, // Only enable when grade level is available
-    staleTime: 0, // Don't cache
-    gcTime: 0, // Don't cache
-  });
-  
-  const selectedSubjectObj = subjects.find(s => String(s.id) === form.subject_id);
-  const selectedSubjectDepartmentId = selectedSubjectObj?.department_id ?? null;
-  const { data: faculty = [] } = useQuery({ queryKey: ["faculty"], queryFn: () => base44.entities.Faculty.list() });  const filteredFaculty = form.subject_id
+  const filteredFaculty = form.subject_id
     ? faculty.filter(f => {
         const facultyDepartmentId = f.department_id ?? f.department?.id ?? null;
         return selectedSubjectDepartmentId
@@ -286,36 +257,6 @@ export default function Scheduling() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Subject {selectedGradeLevel && <span className="text-xs text-slate-500">({selectedGradeLevel})</span>}</Label>
-              <Select value={form.subject_id} onValueChange={v => setForm({ ...form, subject_id: v, faculty_id: "" })} disabled={!form.section_id || isFetchingSubjects || subjects.length === 0}>
-                <SelectTrigger><SelectValue placeholder={form.section_id ? (isFetchingSubjects ? "Loading subjects..." : "Select subject") : "Select a section first"} /></SelectTrigger>
-                <SelectContent>
-                  {isFetchingSubjects ? (
-                    <div className="p-2 text-sm text-slate-500">Loading subjects...</div>
-                  ) : subjects.length === 0 ? (
-                    <div className="p-2 text-sm text-slate-500">No subjects for this grade level</div>
-                  ) : (
-                    subjects.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Teacher</Label>
-              <Select value={form.faculty_id} onValueChange={v => setForm({ ...form, faculty_id: v })} disabled={!form.subject_id || filteredFaculty.length === 0}>
-                <SelectTrigger><SelectValue placeholder={form.subject_id ? "Select faculty (optional)" : "Select a subject first"} /></SelectTrigger>
-                <SelectContent>
-                  {filteredFaculty.length === 0 ? (
-                    <div className="p-2 text-sm text-slate-500">No matching teachers</div>
-                  ) : (
-                    filteredFaculty.map(f => (
-                      <SelectItem key={f.id} value={String(f.id)}>{f.first_name} {f.last_name}</SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-
             {!isKinderSection && (
               <div>
                 <Label>Subject {selectedGradeLevel && <span className="text-xs text-slate-500">({selectedGradeLevel})</span>}</Label>

@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('municipality_city', 80)->nullable();
             $table->string('province', 80)->nullable();
             $table->string('birth_certificate_path')->nullable();
-            $table->enum('status', ['enrolled', 'transferred_out', 'dropped', 'completed', 'alumni'])->default('enrolled');
+            $table->string('status', 40)->default('enrolled');
             $table->timestamps();
             $table->softDeletes();
 

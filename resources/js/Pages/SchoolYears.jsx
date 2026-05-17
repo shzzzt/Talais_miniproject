@@ -246,8 +246,6 @@ export default function SchoolYears() {
 
             <Button onClick={() => setShowForm(true)} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
               <Plus className="w-4 h-4 mr-2" /> Create initial year
-              <Plus className="w-4 h-4 mr-2" /> Create initial year
- origin/fix
             </Button>
           }
         />
@@ -460,8 +458,6 @@ export default function SchoolYears() {
 
             <Button onClick={handleCreateSubmit} disabled={createMutation.isPending} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
               Save
-              Save
- origin/fix
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -509,10 +505,6 @@ export default function SchoolYears() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setEditForm(null)}>
-                  Cancel
-                </Button>                <Button onClick={handleEditSubmit} disabled={updateMutation.isPending} className="bg-[#1e3a5f] hover:bg-[#2c5282]">
-
                 <Button variant="outline" onClick={() => setEditForm(null)}>
                   Cancel
                 </Button>

@@ -64,7 +64,6 @@ class SchoolSettingController extends Controller
                 'qa_weight_sec' => 25,
             ],
             'security' => [
-                'two_factor' => true,
                 'account_lockout' => true,
                 'lockout_attempts' => 5,
                 'session_timeout' => 30,

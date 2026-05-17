@@ -116,7 +116,6 @@ export default function Departments() {
   }
 
   const openModal = (d) => setModalDept(d);
- origin/fix
 
   return (
     <div className="space-y-5">
@@ -163,7 +162,6 @@ export default function Departments() {
                 <Button size="sm" variant="secondary" className="h-8" onClick={() => openModal(d)}>
                   View subjects
                 </Button>
- origin/fix
                 <Button
                   size="sm"
                   variant="ghost"
@@ -206,7 +204,6 @@ export default function Departments() {
             </Button>
             <Button
               disabled={!newName.trim() || createMutation.isPending}
- origin/fix
               onClick={() => createMutation.mutate()}
             >
               Create
@@ -238,7 +235,6 @@ export default function Departments() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="text-xs">Subject</TableHead>
- origin/fix
                         <TableHead className="text-xs">Code</TableHead>
                         <TableHead className="text-xs">Minutes/Day</TableHead>
                       </TableRow>

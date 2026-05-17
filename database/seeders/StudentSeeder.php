@@ -230,6 +230,11 @@ class StudentSeeder extends Seeder
                     $assignedSection = null;
                 }
 
+                $classSession = null;
+                if ($assignedSection && $grade->usesSessionScheduling() && in_array($assignedSection->session, ['AM', 'PM'], true)) {
+                    $classSession = $assignedSection->session;
+                }
+
                 $status = $assignedSection === null ? 'pending' : 'enrolled';
 
                 Enrollment::firstOrCreate(

@@ -70,7 +70,6 @@ export default function AdminSettings() {
 
 
   const [security, setSecurity] = useState({
-    two_factor: true,
     account_lockout: true,
     lockout_attempts: 5,
     session_timeout: 30,
@@ -192,7 +191,6 @@ export default function AdminSettings() {
             <CardHeader><CardTitle className="text-sm">Security Configuration</CardTitle></CardHeader>
             <CardContent className="space-y-5">
               {[
-                { key: "two_factor", label: "Two-Factor Authentication (2FA)", desc: "OTP via email for all accounts" },
                 { key: "account_lockout", label: "Account Lockout", desc: "Lock after failed attempts" },
               ].map(item => (
                 <div key={item.key} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">

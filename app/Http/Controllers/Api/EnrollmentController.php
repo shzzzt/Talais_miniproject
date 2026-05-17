@@ -198,7 +198,6 @@ class EnrollmentController extends Controller
     }
 
 
- origin/fix
     private function rules(bool $partial = false): array
     {
         $required = $partial ? 'sometimes' : 'required';

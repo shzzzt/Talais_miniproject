@@ -43,17 +43,17 @@ class ClassScheduleController extends Controller
             'subject:id,name',
             'faculty:id,first_name,last_name,position',
         ])
-            ->when($request->filled('section_id'), fn ($q) => $q->where('section_id', $request->input('section_id')))
-            ->when($request->filled('subject_id'), fn ($q) => $q->where('subject_id', $request->input('subject_id')))
-            ->when($request->filled('faculty_id'), fn ($q) => $q->where('faculty_id', $request->input('faculty_id')))
-            ->when($request->filled('day_of_week'), fn ($q) => $q->where('day_of_week', $this->dayToInt($request->input('day_of_week'))));
+            ->when($request->filled('section_id'), fn($q) => $q->where('section_id', $request->input('section_id')))
+            ->when($request->filled('subject_id'), fn($q) => $q->where('subject_id', $request->input('subject_id')))
+            ->when($request->filled('faculty_id'), fn($q) => $q->where('faculty_id', $request->input('faculty_id')))
+            ->when($request->filled('day_of_week'), fn($q) => $q->where('day_of_week', $this->dayToInt($request->input('day_of_week'))));
 
         $records = $query->orderBy('day_of_week')->orderBy('time_start')
             ->limit(min((int) $request->query('limit', 500), 2000))
             ->get();
 
         return response()->json([
-            'data' => $records->map(fn ($r) => $this->present($r))->values(),
+            'data' => $records->map(fn($r) => $this->present($r))->values(),
         ]);
     }
 
@@ -109,6 +109,7 @@ class ClassScheduleController extends Controller
             'time_start' => ['required', 'string'],
             'time_end' => ['required', 'string'],
         ]);
+        return $payload;
     }
 
     private function prepare(array $payload): array
@@ -161,13 +162,13 @@ class ClassScheduleController extends Controller
             'id' => $record->id,
             'school_year_id' => $record->school_year_id,
             'section_id' => $record->section_id,
-            'section' => $section ? trim(($section->name ?? '').($gradeLevel ? " ($gradeLevel)" : '')) : null,
+            'section' => $section ? trim(($section->name ?? '') . ($gradeLevel ? " ($gradeLevel)" : '')) : null,
             'section_name' => $section?->name,
             'grade_level' => $gradeLevel,
             'subject_id' => $record->subject_id,
             'subject' => $subject?->name ?? ($this->isKindergartenSplitGrade($gradeLevel) ? 'Kindergarten adviser' : null),
             'faculty_id' => $record->faculty_id,
-            'teacher' => $faculty ? trim($faculty->first_name.' '.$faculty->last_name) : null,
+            'teacher' => $faculty ? trim($faculty->first_name . ' ' . $faculty->last_name) : null,
             'day_of_week' => $record->day_of_week,
             'day' => self::INT_TO_DAY[$record->day_of_week] ?? 'Monday',
             'time_start' => $record->time_start ? substr($record->time_start, 0, 5) : null,

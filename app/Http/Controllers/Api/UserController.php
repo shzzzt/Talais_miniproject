@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
@@ -72,7 +71,6 @@ class UserController extends Controller
             'role' => ['required', Rule::in($allowedRoles)],
             'phone_number' => ['nullable', 'string', 'max:30'],
             'status' => ['nullable', Rule::in(['active', 'inactive', 'suspended'])],
-            'two_factor_enabled' => ['boolean'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
@@ -93,7 +91,7 @@ class UserController extends Controller
             'role' => $data['role'],
             'phone_number' => $data['phone_number'] ?? null,
             'status' => $data['status'] ?? 'active',
-            'two_factor_enabled' => (bool) ($data['two_factor_enabled'] ?? false),
+            'two_factor_enabled' => false,
         ]);
 
         Role::findOrCreate($data['role'], 'web');
@@ -128,11 +126,9 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:120'],
             'email' => ['sometimes', 'required', 'email', 'max:160', Rule::unique('users', 'email')->ignore($user->id)],
-            'password' => ['nullable', 'confirmed', Password::min(8)->letters()->numbers()],
             'role' => ['sometimes', 'required', Rule::in($allowedRoles)],
             'phone_number' => ['nullable', 'string', 'max:30'],
             'status' => ['nullable', Rule::in(['active', 'inactive', 'suspended'])],
-            'two_factor_enabled' => ['boolean'],
             'department_id' => ['sometimes', 'nullable', 'integer', 'exists:departments,id'],
         ]);
 
@@ -145,11 +141,6 @@ class UserController extends Controller
         $hasDepartmentField = array_key_exists('department_id', $data);
         $departmentId = $data['department_id'] ?? null;
         unset($data['department_id']);
-
-        if (! empty($data['password'])) {
-            $user->password = Hash::make($data['password']);
-        }
-        unset($data['password']);
 
         $user->fill($data);
         $user->save();
@@ -213,26 +204,6 @@ class UserController extends Controller
         ])->save();
 
         return response()->json(['data' => $this->presentOne($user)]);
-    }
-
-    public function resetPassword(Request $request, string $id): JsonResponse
-    {
-        $user = User::findOrFail($id);
-
-        if ($request->user()->role === 'school_admin' && $user->role === 'admin') {
-            return response()->json(['message' => 'Forbidden.'], 403);
-        }
-
-        $password = $request->input('password', Str::password(12));
-        $user->password = Hash::make($password);
-        $user->save();
-
-        return response()->json([
-            'data' => [
-                'user_id' => $user->id,
-                'temporary_password' => $request->boolean('return_password') ? $password : null,
-            ],
-        ]);
     }
 
     private function present($collection)

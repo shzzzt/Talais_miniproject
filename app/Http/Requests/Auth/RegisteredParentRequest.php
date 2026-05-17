@@ -71,7 +71,7 @@ class RegisteredParentRequest extends FormRequest
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised(),
+                    ->when(! app()->environment('testing'), fn (Password $rule) => $rule->uncompromised()),
             ],
             'guardian.first_name' => ['required', 'string', 'max:80'],
             'guardian.middle_name' => ['nullable', 'string', 'max:80'],

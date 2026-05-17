@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('school_year_id')->constrained('school_years')->onDelete('cascade');
             $table->foreignId('section_id')->constrained('sections')->onDelete('cascade');
-            $table->foreignId('subject_id')->constrained('subjects')->onDelete('cascade');
+            $table->foreignId('subject_id')->nullable()->constrained('subjects')->onDelete('cascade');
             $table->foreignId('faculty_id')->nullable()->constrained('faculty')->onDelete('set null');
             $table->tinyInteger('day_of_week');
             $table->time('time_start');

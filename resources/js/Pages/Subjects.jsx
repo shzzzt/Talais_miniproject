@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44, http } from "@/lib/api";
 import { extractApiError } from "@/lib/utils";
 import { toast } from "sonner";
-import { base44, http } from "@/lib/api";
 import { Plus, Edit2, Trash2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import PageHeader from "../components/shared/PageHeader";
 import EmptyState from "../components/shared/EmptyState";
 
-const GRADE_LEVELS = ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
-
-const GRADE_LEVELS = ["Kindergarten","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6"];
+const GRADE_LEVELS = ["Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
 const NONE_DEPT = "__none__";
 
 function departmentOptionLabel(d) {
@@ -153,8 +150,6 @@ export default function Subjects() {
           : s.department_id != null
             ? String(s.department_id)
             : NONE_DEPT,
-
- origin/fix
     });
     setShowForm(true);
   };

@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100);
-            $table->string('code', 20)->unique();
+            $table->string('code', 20)->nullable()->unique();
             $table->smallInteger('minutes_per_day')->nullable();
             $table->timestamps();
         });

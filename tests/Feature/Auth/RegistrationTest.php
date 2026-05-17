@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -18,14 +19,30 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        Role::create(['name' => 'parent']);
+
         $response = $this->post('/register', [
-            'name' => 'Test User',
+            'login_method' => 'email',
             'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => 'StrongPass123!',
+            'password_confirmation' => 'StrongPass123!',
+            'guardian' => [
+                'first_name' => 'Test',
+                'last_name' => 'Guardian',
+                'relationship' => 'Mother',
+            ],
+            'children' => [
+                [
+                    'first_name' => 'Test',
+                    'last_name' => 'Learner',
+                    'birth_date' => '2018-01-15',
+                    'gender' => 'Female',
+                ],
+            ],
         ]);
 
+        $response->assertSessionHasNoErrors();
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('parent-portal.index', absolute: false));
     }
 }

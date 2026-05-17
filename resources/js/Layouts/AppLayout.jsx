@@ -9,8 +9,6 @@ import {
   AlertTriangle, Settings, Clock, User, Files, Database, Activity, UserPlus,
   LayoutGrid,
   Award,
-  AlertTriangle, Settings, Clock, User, Files, Database, Activity, UserPlus,
-  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/roles";
