@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
+use App\Models\ParentGuardian;
 use App\Models\SchoolYear;
+use App\Models\Student;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class EnrollmentController extends Controller
@@ -41,6 +45,10 @@ class EnrollmentController extends Controller
                         ->orWhere('lrn', 'ilike', $term);
                 });
             })
+            ->when($request->user()?->role === 'parent', function ($q) use ($request) {
+                $studentIds = $this->linkedStudentIds($request->user());
+                $q->whereIn('student_id', $studentIds ?: [0]);
+            })
             ->orderByDesc('created_at')
             ->limit((int) $request->query('limit', 500))
             ->get();
@@ -50,8 +58,18 @@ class EnrollmentController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        abort_if($request->user()?->role === 'parent', 403, 'Parent accounts cannot submit school enrollment records.');
+
         $data = $request->validate($this->rules());
+
+        $this->authorizeEnrollmentPlacementChanges($request, $data, null);
+
         $data['enrolled_by'] ??= $request->user()?->id;
+
+        $student = Student::find($data['student_id']);
+        if ($student && $student->status === 'pending_enrollment') {
+            $student->fill(['status' => 'enrolled'])->save();
+        }
 
         $enrollment = Enrollment::updateOrCreate(
             [
@@ -71,20 +89,27 @@ class EnrollmentController extends Controller
         return response()->json(['data' => $enrollment->load('student', 'gradeLevel', 'section')], 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
+        $enrollment = Enrollment::with('student', 'gradeLevel', 'section', 'schoolYear')->findOrFail($id);
+        $this->maybeAuthorizeParentEnrollment($request, $enrollment);
+
         return response()->json([
-            'data' => Enrollment::with('student', 'gradeLevel', 'section', 'schoolYear')->findOrFail($id),
+            'data' => $enrollment,
         ]);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
+        abort_if($request->user()?->role === 'parent', 403, 'Parent accounts cannot update school enrollment records.');
+
         $enrollment = Enrollment::findOrFail($id);
+
         $data = $request->validate($this->rules(true));
-<<<<<<< Updated upstream
+
+        $this->authorizeEnrollmentPlacementChanges($request, $data, $enrollment);
         $enrollment->fill($data)->save();
-=======
+
 
         $this->authorizeEnrollmentPlacementChanges($request, $data, $enrollment);
 
@@ -96,20 +121,21 @@ class EnrollmentController extends Controller
 
         $enrollment->syncClassSessionFromSection();
         $enrollment->save();
->>>>>>> Stashed changes
 
         return response()->json(['data' => $enrollment->load('student', 'gradeLevel', 'section')]);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        Enrollment::findOrFail($id)->delete();
+        $enrollment = Enrollment::findOrFail($id);
+
+        abort_if($request->user()?->role === 'parent', 403);
+
+        $enrollment->delete();
 
         return response()->json(['data' => true]);
     }
 
-<<<<<<< Updated upstream
-=======
     /** @return array<int, int> */
     private function linkedStudentIds(?User $user): array
     {
@@ -142,9 +168,7 @@ class EnrollmentController extends Controller
     }
 
     /**
-     * Section placement: school admins (`manage-enrollment`) or grade-level heads (`assign-enrollment-section`).
-     * Grade changes use `promote-students`.
-     */
+     * Section assignment uses `assign-enrollment-section`; grade promotions use `promote-students`.     */
     private function authorizeEnrollmentPlacementChanges(Request $request, array $data, ?Enrollment $existing): void
     {
         if ($request->user()->role === 'parent') {
@@ -153,8 +177,7 @@ class EnrollmentController extends Controller
 
         if ($existing === null) {
             if (! empty($data['section_id'])) {
-                $this->authorizeSectionAssignment($request);
-            }
+                Gate::authorize('assign-enrollment-section');            }
 
             return;
         }
@@ -165,8 +188,7 @@ class EnrollmentController extends Controller
                 : null;
             $old = $existing->section_id !== null ? (int) $existing->section_id : null;
             if ($new !== $old) {
-                $this->authorizeSectionAssignment($request);
-            }
+                Gate::authorize('assign-enrollment-section');            }
         }
 
         if (array_key_exists('grade_level_id', $data)
@@ -175,18 +197,8 @@ class EnrollmentController extends Controller
         }
     }
 
-    private function authorizeSectionAssignment(Request $request): void
-    {
-        if ($request->user()->can('manage-enrollment')) {
-            Gate::authorize('manage-enrollment');
 
-            return;
-        }
-
-        Gate::authorize('assign-enrollment-section');
-    }
-
->>>>>>> Stashed changes
+ origin/fix
     private function rules(bool $partial = false): array
     {
         $required = $partial ? 'sometimes' : 'required';

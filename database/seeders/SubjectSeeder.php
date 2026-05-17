@@ -21,8 +21,7 @@ class SubjectSeeder extends Seeder
         ['code' => 'AP', 'name' => 'Araling Panlipunan', 'minutes_per_day' => 40],
         ['code' => 'ESP', 'name' => 'Edukasyon sa Pagpapakatao', 'minutes_per_day' => 40],
         ['code' => 'MAPEH', 'name' => 'MAPEH', 'minutes_per_day' => 40],
-        ['code' => 'TLE', 'name' => 'Reading and Literacy', 'minutes_per_day' => 40],
-        ['code' => 'MTB', 'name' => 'Mother Tongue', 'minutes_per_day' => 50],
+        ['code' => 'TLE', 'name' => 'Technology and Livelihood Education', 'minutes_per_day' => 40],        ['code' => 'MTB', 'name' => 'Mother Tongue', 'minutes_per_day' => 50],
     ];
 
     /** @var array<string, string> Pivot weights (matches migration defaults) */

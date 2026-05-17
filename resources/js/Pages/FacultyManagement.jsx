@@ -73,101 +73,6 @@ function isGradeLevelHeadAssignable(gradeLevel) {
   const gradeNumber = Number(gradeName.match(/^Grade\s+(\d+)$/i)?.[1]);
   return !gradeNumber || gradeNumber <= 6;
 }
-
-function GradeLevelHeadRow({ gradeLevel, faculty, onInvalidate }) {
-  const existingHead = faculty.find((f) => f.is_grade_level_head && Number(f.grade_level_head_of) === Number(gradeLevel.id));
-  const [selectedFacultyId, setSelectedFacultyId] = useState(existingHead ? String(existingHead.id) : NONE_USER);
-
-  useEffect(() => {
-    setSelectedFacultyId(existingHead ? String(existingHead.id) : NONE_USER);
-  }, [existingHead?.id, existingHead?.updated_at, gradeLevel.id]);
-
-  const selectedFaculty = faculty.find((f) => String(f.id) === selectedFacultyId) ?? null;
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (selectedFacultyId === NONE_USER) {
-        if (!existingHead) {
-          return null;
-        }
-
-        const body = {
-          first_name: existingHead.first_name,
-          last_name: existingHead.last_name,
-          middle_name: existingHead.middle_name || null,
-          employee_id: existingHead.employee_id || null,
-          position: existingHead.position || null,
-          specialization: existingHead.specialization || null,
-          contact_number: existingHead.contact_number || null,
-          is_grade_level_head: false,
-          grade_level_head_of: null,
-        };
-        const { data } = await http.patch(`/faculty/${existingHead.id}`, body);
-        return data?.data;
-      }
-
-      if (!selectedFaculty) {
-        throw new Error("Select a teacher.");
-      }
-
-      const body = {
-        first_name: selectedFaculty.first_name,
-        last_name: selectedFaculty.last_name,
-        middle_name: selectedFaculty.middle_name || null,
-        employee_id: selectedFaculty.employee_id || null,
-        position: selectedFaculty.position || null,
-        specialization: selectedFaculty.specialization || null,
-        contact_number: selectedFaculty.contact_number || null,
-        is_grade_level_head: true,
-        grade_level_head_of: Number(gradeLevel.id),
-      };
-      const { data } = await http.patch(`/faculty/${selectedFaculty.id}`, body);
-      return data?.data;
-    },
-    onSuccess: () => {
-      toast.success("Grade level head saved", {
-        description: `${gradeLevel.name}: ${selectedFaculty ? facultyName(selectedFaculty) : "No assigned head"}`,
-      });
-      onInvalidate();
-    },
-    onError: (err) => toast.error(extractError(err)),
-  });
-
-  const originalFacultyId = existingHead ? String(existingHead.id) : NONE_USER;
-  const dirty = selectedFacultyId !== originalFacultyId;
-
-  return (
-    <TableRow className="hover:bg-slate-50">
-      <TableCell className="text-sm font-medium text-slate-800">
-        {gradeLevel.name}
-      </TableCell>
-      <TableCell className="min-w-[220px]">
-        <Select
-          value={selectedFacultyId}
-          onValueChange={setSelectedFacultyId}
-        >
-          <SelectTrigger className="h-9 text-left">
-            <SelectValue placeholder="Select teacher…" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NONE_USER}>— No assigned head —</SelectItem>
-            {faculty.map((f) => (
-              <SelectItem key={f.id} value={String(f.id)}>
-                {facultyName(f)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </TableCell>
-      <TableCell className="text-sm text-slate-500">{selectedFaculty?.employee_id ?? "—"}</TableCell>
-      <TableCell>
-        <Button
-          size="sm"
-          variant="secondary"
-          className="h-8"
-          disabled={!dirty || saveMutation.isPending}
-          isLoading={saveMutation.isPending}
-          loadingText="Saving..."
           onClick={() => saveMutation.mutate()}
         >
           <Save className="w-3.5 h-3.5 mr-1" />
@@ -187,26 +92,6 @@ export default function FacultyManagement() {
   const [facultyUserForm, setFacultyUserForm] = useState(facultyAccountEmpty);
   const [closingFacultyUserForm, setClosingFacultyUserForm] = useState(false);
   const [deletingFacultyUserId, setDeletingFacultyUserId] = useState(null);
-
-  const { data: departmentsList = [] } = useQuery({
-    queryKey: ["departments-roster"],
-    queryFn: async () => {
-      const { data } = await http.get("/departments");
-      return data?.data ?? [];
-    },
-    enabled: user?.role === "school_admin",
-  });
-
-  const { data: gradeLevels = [] } = useQuery({
-    queryKey: ["grade-levels"],
-    queryFn: async () => {
-      const { data } = await http.get("/grade-levels");
-      return data?.data ?? [];
-    },
-    enabled: user?.role === "school_admin",
-  });
-  const gradeLevelHeadLevels = gradeLevels.filter(isGradeLevelHeadAssignable);
-
   const { data: faculty = [], isLoading } = useQuery({
     queryKey: ["faculty-roster"],
     queryFn: async () => {
@@ -273,8 +158,7 @@ export default function FacultyManagement() {
       toast.success("Teacher account created");
       qc.invalidateQueries({ queryKey: ["users"] });
       onInvalidate();
-      finishFacultyUserForm();
-    },
+      finishFacultyUserForm();    },
     onError: (err) => toast.error(extractError(err)),
   });
 
@@ -287,22 +171,13 @@ export default function FacultyManagement() {
       toast.success("Teacher account updated");
       qc.invalidateQueries({ queryKey: ["users"] });
       onInvalidate();
-      finishFacultyUserForm();
-    },
+      finishFacultyUserForm();    },
     onError: (err) => toast.error(extractError(err)),
   });
 
   const deleteFacultyUserMutation = useMutation({
     mutationFn: async (id) => http.delete(`/users/${id}`),
-    onMutate: (id) => setDeletingFacultyUserId(id),
-    onSuccess: () => {
-      toast.success("Account deactivated");
-      qc.invalidateQueries({ queryKey: ["users"] });
-      onInvalidate();
-    },
-    onError: (err) => toast.error(extractError(err)),
-    onSettled: () => setDeletingFacultyUserId(null),
-  });
+    onMutate: (id) => setDeletingFacultyUserId(id),  });
 
   const unlockFacultyUserMutation = useMutation({
     mutationFn: async (id) => http.post(`/users/${id}/unlock`),
@@ -311,24 +186,7 @@ export default function FacultyManagement() {
       qc.invalidateQueries({ queryKey: ["users"] });
       qc.invalidateQueries({ queryKey: ["users", "faculty-only-manage"] });
     },
-    onError: (err) => toast.error(extractError(err)),
-  });
-
-  const resetFacultyPasswordMutation = useMutation({
-    mutationFn: async (id) => {
-      const { data } = await http.post(`/users/${id}/reset-password`, { return_password: true });
-      return data?.data;
-    },
-    onSuccess: (data) => {
-      toast.success(`Temporary password: ${data?.temporary_password ?? "set"}`, { duration: 10_000 });
-    },
-    onError: (err) => toast.error(extractError(err)),
-  });
-
-  const facultyUserFormBusy = createFacultyUserMutation.isPending || updateFacultyUserMutation.isPending || closingFacultyUserForm;
-
-  const finishFacultyUserForm = () => {
-    setShowFacultyUserForm(false);
+    onError: (err) => toast.error(extractError(err)),    setShowFacultyUserForm(false);
     setEditingFacultyUser(null);
     setFacultyUserForm(facultyAccountEmpty);
   };
@@ -342,89 +200,6 @@ export default function FacultyManagement() {
       toast.message("Teacher form closed");
     }, 150);
   };
-
-  const openCreateFacultyUser = () => {
-    setEditingFacultyUser(null);
-    setFacultyUserForm(facultyAccountEmpty);
-    setShowFacultyUserForm(true);
-  };
-
-  const openEditFacultyUser = (u) => {
-    setEditingFacultyUser(u);
-    setFacultyUserForm({
-      ...facultyAccountEmpty,
-      name: u.name ?? "",
-      email: u.email ?? "",
-      role: "faculty",
-      status: u.status ?? "active",
-      phone_number: u.phone_number ?? "",
-      two_factor_enabled: !!u.two_factor_enabled,
-      department_id:
-        u.department?.id != null
-          ? String(u.department.id)
-          : u.department_id != null
-            ? String(u.department_id)
-            : NONE_DEPT,
-    });
-    setShowFacultyUserForm(true);
-  };
-
-  const submitFacultyUserForm = () => {
-    const deptId =
-      facultyUserForm.department_id === NONE_DEPT || facultyUserForm.department_id === ""
-        ? null
-        : Number(facultyUserForm.department_id);
-    const payload = {
-      name: facultyUserForm.name,
-      email: facultyUserForm.email,
-      role: "faculty",
-      status: facultyUserForm.status,
-      phone_number: facultyUserForm.phone_number || null,
-      two_factor_enabled: !!facultyUserForm.two_factor_enabled,
-      department_id: deptId,
-    };
-    if (facultyUserForm.password) {
-      payload.password = facultyUserForm.password;
-      payload.password_confirmation = facultyUserForm.password_confirmation || facultyUserForm.password;
-    }
-    if (editingFacultyUser) {
-      updateFacultyUserMutation.mutate({ id: editingFacultyUser.id, payload });
-    } else {
-      if (!facultyUserForm.password) {
-        toast.error("Password is required for new accounts.");
-        return;
-      }
-      createFacultyUserMutation.mutate(payload);
-    }
-  };
-
-  if (user?.role !== "school_admin") {
-    return (
-      <div className="p-6 text-center text-sm text-slate-500">
-        Only school administrators can manage teachers and grade level heads.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      <PageHeader
-        title="Teachers"
-        description="Teachers tab: create and manage teacher logins. Grade-level head tab: assign one faculty member per grade level."
-      />
-
-      <Tabs defaultValue="teachers" className="w-full">
-        <TabsList className="mb-2">
-          <TabsTrigger value="teachers">Teachers</TabsTrigger>
-          <TabsTrigger value="grade-level-head">Grade-level head</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="teachers" className="space-y-4 mt-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <p className="text-sm text-slate-600">
-              Create accounts for teachers (system role: faculty). You can assign a departmental roster (grades 4–6) when applicable. Roster rows are created automatically when you save a new login.
-            </p>
-            <Button onClick={openCreateFacultyUser} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               Add teacher account
             </Button>
@@ -494,8 +269,7 @@ export default function FacultyManagement() {
                             onClick={() => openEditFacultyUser(u)}
                             disabled={deletingFacultyUserId === u.id}
                             title="Edit"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
+                          >                            <Edit2 className="w-3.5 h-3.5" />
                           </Button>
                           {u.locked_until && (
                             <Button
@@ -503,18 +277,7 @@ export default function FacultyManagement() {
                               variant="ghost"
                               className="h-8 w-8"
                               onClick={() => unlockFacultyUserMutation.mutate(u.id)}
-                              isLoading={unlockFacultyUserMutation.isPending && unlockFacultyUserMutation.variables === u.id}
-                              title="Unlock"
-                            >
-                              <Unlock className="w-3.5 h-3.5 text-amber-600" />
-                            </Button>
-                          )}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            isLoading={resetFacultyPasswordMutation.isPending && resetFacultyPasswordMutation.variables === u.id}
-                            onClick={() => {
+                              isLoading={unlockFacultyUserMutation.isPending && unlockFacultyUserMutation.variables === u.id}                            onClick={() => {
                               if (confirm(`Reset password for ${u.email}?`)) resetFacultyPasswordMutation.mutate(u.id);
                             }}
                             title="Reset password"
@@ -525,119 +288,7 @@ export default function FacultyManagement() {
                             size="icon"
                             variant="ghost"
                             className="h-8 w-8"
-                            isLoading={deletingFacultyUserId === u.id}
-                            onClick={() => {
-                              if (confirm(`Deactivate ${u.email}?`)) deleteFacultyUserMutation.mutate(u.id);
-                            }}
-                            title="Deactivate"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-
-          <Dialog open={showFacultyUserForm} onOpenChange={(v) => (v ? setShowFacultyUserForm(true) : closeFacultyUserForm())}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{editingFacultyUser ? "Edit teacher account" : "Add teacher account"}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Full name</Label>
-                  <Input value={facultyUserForm.name} onChange={(e) => setFacultyUserForm({ ...facultyUserForm, name: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input
-                    type="email"
-                    value={facultyUserForm.email}
-                    onChange={(e) => setFacultyUserForm({ ...facultyUserForm, email: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <Select value={facultyUserForm.status} onValueChange={(v) => setFacultyUserForm({ ...facultyUserForm, status: v })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Department (optional)</Label>
-                  <p className="text-[11px] text-slate-400 mb-1">For teachers in grades 4–6 departmentalized classes.</p>
-                  <Select
-                    value={facultyUserForm.department_id || NONE_DEPT}
-                    onValueChange={(v) => setFacultyUserForm({ ...facultyUserForm, department_id: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE_DEPT}>— None —</SelectItem>
-                      {departmentsList.map((d) => (
-                        <SelectItem key={d.id} value={String(d.id)}>
-                          {departmentOptionLabel(d)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input
-                    value={facultyUserForm.phone_number ?? ""}
-                    onChange={(e) => setFacultyUserForm({ ...facultyUserForm, phone_number: e.target.value })}
-                  />
-                </div>
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                  <div>
-                    <p className="text-sm font-medium">Two-factor authentication</p>
-                    <p className="text-xs text-slate-400">Require email OTP on every login.</p>
-                  </div>
-                  <Switch
-                    checked={facultyUserForm.two_factor_enabled}
-                    onCheckedChange={(v) => setFacultyUserForm({ ...facultyUserForm, two_factor_enabled: v })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>{editingFacultyUser ? "New password (optional)" : "Password"}</Label>
-                    <Input
-                      type="password"
-                      value={facultyUserForm.password}
-                      onChange={(e) => setFacultyUserForm({ ...facultyUserForm, password: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label>Confirm password</Label>
-                    <Input
-                      type="password"
-                      value={facultyUserForm.password_confirmation}
-                      onChange={(e) => setFacultyUserForm({ ...facultyUserForm, password_confirmation: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={closeFacultyUserForm}
-                  isLoading={closingFacultyUserForm}
-                  loadingText="Closing..."
-                  disabled={createFacultyUserMutation.isPending || updateFacultyUserMutation.isPending}
-                >
-                  Cancel
+                            isLoading={deletingFacultyUserId === u.id}                  Cancel
                 </Button>
                 <Button
                   onClick={submitFacultyUserForm}
@@ -648,8 +299,7 @@ export default function FacultyManagement() {
                   }
                   isLoading={createFacultyUserMutation.isPending || updateFacultyUserMutation.isPending}
                   loadingText={editingFacultyUser ? "Updating..." : "Creating..."}
-                  className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
-                >
+                  className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"                >
                   {editingFacultyUser ? "Update" : "Create"}
                 </Button>
               </DialogFooter>
@@ -699,14 +349,12 @@ export default function FacultyManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading || (gradeLevelHeadLevels.length === 0 && unlinkedLoading) ? (
-                  <TableRow>
+                {isLoading || (gradeLevelHeadLevels.length === 0 && unlinkedLoading) ? (                  <TableRow>
                     <TableCell colSpan={4} className="text-center text-sm text-slate-400 py-10">
                       Loading grade levels…
                     </TableCell>
                   </TableRow>
-                ) : gradeLevelHeadLevels.length === 0 ? (
-                  <TableRow>
+                ) : gradeLevelHeadLevels.length === 0 ? (                  <TableRow>
                     <TableCell colSpan={4} className="text-center text-sm text-slate-400 py-10">
                       No grade levels found.
                     </TableCell>
@@ -727,8 +375,7 @@ export default function FacultyManagement() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  gradeLevelHeadLevels.map((gradeLevel) => (
-                    <GradeLevelHeadRow
+                  gradeLevelHeadLevels.map((gradeLevel) => (                    <GradeLevelHeadRow
                       key={gradeLevel.id}
                       gradeLevel={gradeLevel}
                       faculty={faculty}

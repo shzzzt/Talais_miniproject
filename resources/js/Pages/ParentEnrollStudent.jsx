@@ -400,8 +400,7 @@ export default function ParentEnrollStudent() {
               <Button
                 type="submit"
                 disabled={newStudentMutation.isPending}
-                className="flex-1 bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
-              >
+                className="flex-1 bg-[#1e3a5f] hover:bg-[#2c5282]"              >
                 {newStudentMutation.isPending ? 'Registering…' : 'Register Student'}
               </Button>
             </div>

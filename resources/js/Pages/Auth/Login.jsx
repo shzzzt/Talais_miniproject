@@ -1,13 +1,14 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, Shield, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
-        email: '',
+        login: '',
         password: '',
         remember: false,
     });
@@ -20,15 +21,8 @@ export default function Login({ status, canResetPassword }) {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+        <div className="relative flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-slate-100 lg:flex-row">
             <Head title="Sign In" />
-<<<<<<< Updated upstream
-            <Card className="w-full max-w-md border-0 shadow-xl">
-                <CardContent className="p-8 space-y-6">
-                    <div className="text-center space-y-2">
-                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-400">
-                            <GraduationCap className="w-7 h-7 text-[#1e3a5f]" />
-=======
 
             {/* Decorative background (mobile + form side) */}
             <div
@@ -36,8 +30,7 @@ export default function Login({ status, canResetPassword }) {
                 aria-hidden
             />
             <div
-                className="pointer-events-none absolute -left-32 top-0 h-80 w-80 rounded-full bg-[var(--theme-primary)]/10 blur-3xl"
-                aria-hidden
+                className="pointer-events-none absolute -left-32 top-0 h-80 w-80 rounded-full bg-[#1e3a5f]/10 blur-3xl"                aria-hidden
             />
             <div
                 className="pointer-events-none absolute -right-16 bottom-0 h-96 w-96 rounded-full bg-sky-200/40 blur-3xl"
@@ -129,26 +122,20 @@ export default function Login({ status, canResetPassword }) {
                 <div className="mx-auto my-auto w-full max-w-[28rem] space-y-8">
                     {/* Mobile-only brand strip */}
                     <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-200/80 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-sm lg:hidden">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--theme-primary)] text-white shadow-md shadow-[#1e3a5f]/25">
-                            <GraduationCap className="h-5 w-5" strokeWidth={1.75} />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1e3a5f] text-white shadow-md shadow-[#1e3a5f]/25">                            <GraduationCap className="h-5 w-5" strokeWidth={1.75} />
                         </div>
                         <div className="text-left">
                             <p className="text-sm font-bold text-slate-900">TALAIS</p>
                             <p className="text-[11px] text-slate-500">Parent & guardian portal</p>
->>>>>>> Stashed changes
                         </div>
-                        <h1 className="text-2xl font-black text-[#1e3a5f]">TALAIS</h1>
-                        <p className="text-xs text-slate-500">Musuan Integrated School</p>
                     </div>
 
-<<<<<<< Updated upstream
-                    {status && (
-                        <div className="text-sm font-medium text-emerald-600 text-center">{status}</div>
-                    )}
-=======
+
                     <div className="space-y-2 text-center sm:text-left">
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--theme-primary)]/75">
-                            Welcome back
+
+                    <div className="space-y-2 text-center sm:text-left">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1e3a5f]/75">                            Welcome back
                         </p>
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[1.75rem]">
                             Sign in to your account
@@ -159,51 +146,6 @@ export default function Login({ status, canResetPassword }) {
                             password.
                         </p>
                     </div>
->>>>>>> Stashed changes
-
-                    <form onSubmit={submit} className="space-y-4">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={data.email}
-                                autoComplete="username"
-                                autoFocus
-                                onChange={(e) => setData('email', e.target.value)}
-                                required
-                            />
-                            {errors.email && <p className="text-xs text-red-600">{errors.email}</p>}
-                        </div>
-
-<<<<<<< Updated upstream
-                        <div className="space-y-1.5">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={data.password}
-                                autoComplete="current-password"
-                                onChange={(e) => setData('password', e.target.value)}
-                                required
-                            />
-                            {errors.password && <p className="text-xs text-red-600">{errors.password}</p>}
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm">
-                            <label className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={data.remember}
-                                    onChange={(e) => setData('remember', e.target.checked)}
-                                    className="rounded border-slate-300"
-                                />
-                                <span className="text-slate-600">Remember me</span>
-                            </label>
-                            {canResetPassword && (
-                                <Link href="/forgot-password" className="text-[#1e3a5f] hover:underline">
-                                    Forgot password?
-=======
                             <form onSubmit={submit} className="space-y-5">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="login">Email or mobile number</Label>
@@ -290,22 +232,116 @@ export default function Login({ status, canResetPassword }) {
                                     href="/register"
                                     className="font-semibold text-[var(--theme-primary)] hover:text-[var(--theme-primary-hover)] hover:underline"
                                 >
-                                    Create an account
->>>>>>> Stashed changes
-                                </Link>
-                            )}
-                        </div>
+                                    Create an account                                </Link>
 
-                        <Button
-                            type="submit"
-                            disabled={processing}
-                            className="w-full bg-[#1e3a5f] hover:bg-[#2c5282]"
-                        >
-                            {processing ? 'Signing in…' : 'Sign In'}
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
+
+                    <Card className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white/85 shadow-xl shadow-slate-900/[0.07] backdrop-blur-sm ring-1 ring-white/60">
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#1e3a5f]/20 to-transparent" />
+                        <CardContent className="space-y-6 p-6 sm:p-8">
+                            {status && (
+                                <div className="rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-3 py-2.5 text-center text-sm font-medium text-emerald-900">
+                                    {status}
+                                </div>
+ origin/fix
+                            )}
+
+                            <form onSubmit={submit} className="space-y-5">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="login">Email or mobile number</Label>
+                                    <Input
+                                        id="login"
+                                        type="text"
+                                        value={data.login}
+                                        autoComplete="username"
+                                        autoFocus
+                                        onChange={(e) => setData('login', e.target.value)}
+                                        required
+                                        className="h-11 rounded-xl border-slate-200/90 bg-white shadow-inner shadow-slate-900/[0.02] transition-[box-shadow,border-color] focus-visible:border-[#1e3a5f]/40 focus-visible:ring-[#1e3a5f]/25"
+                                        placeholder="name@school.edu.ph or 09*********"
+                                    />
+                                    {errors.login && (
+                                        <p className="text-xs text-red-600">{errors.login}</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <Label htmlFor="password">Password</Label>
+                                        {canResetPassword && (
+                                            <Link
+                                                href="/forgot-password"
+                                                className="text-xs font-medium text-[#1e3a5f] hover:text-[#2c5282] hover:underline"
+                                            >
+                                                Forgot password?
+                                            </Link>
+                                        )}
+                                    </div>
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        value={data.password}
+                                        autoComplete="current-password"
+                                        onChange={(e) => setData('password', e.target.value)}
+                                        required
+                                        className="h-11 rounded-xl border-slate-200/90 bg-white shadow-inner shadow-slate-900/[0.02] transition-[box-shadow,border-color] focus-visible:border-[#1e3a5f]/40 focus-visible:ring-[#1e3a5f]/25"
+                                    />
+                                    {errors.password && (
+                                        <p className="text-xs text-red-600">{errors.password}</p>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Checkbox
+                                        id="remember"
+                                        checked={data.remember}
+                                        onCheckedChange={(checked) =>
+                                            setData('remember', checked === true)
+                                        }
+                                        className="border-slate-300 data-[state=checked]:border-[#1e3a5f] data-[state=checked]:bg-[#1e3a5f]"
+                                    />
+                                    <Label
+                                        htmlFor="remember"
+                                        className="cursor-pointer text-sm font-normal text-slate-600"
+                                    >
+                                        Remember this device
+                                    </Label>
+                                </div>
+
+                                <Button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="h-11 w-full rounded-xl bg-[#1e3a5f] text-base font-semibold shadow-lg shadow-[#1e3a5f]/25 transition hover:bg-[#2c5282] hover:shadow-xl hover:shadow-[#1e3a5f]/30"
+                                >
+                                    {processing ? 'Signing in…' : 'Sign in'}
+                                </Button>
+                            </form>
+
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t border-slate-200/90" />
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase tracking-wider">
+                                    <span className="bg-card/95 px-3 text-slate-400">New parent?</span>
+                                </div>
+                            </div>
+
+                            <p className="text-center text-sm text-slate-600">
+                                Register as a parent or guardian to enroll learners.{' '}
+                                <Link
+                                    href="/register"
+                                    className="font-semibold text-[#1e3a5f] hover:text-[#2c5282] hover:underline"
+                                >
+                                    Create an account
+                                </Link>
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <p className="text-center text-xs text-slate-500 sm:text-left">
+                        Having trouble? Contact your school registrar or IT office.
+                    </p>
+                </div>
+            </main>
         </div>
     );
 }

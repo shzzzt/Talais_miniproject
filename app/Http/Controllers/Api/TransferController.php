@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ParentGuardian;
 use App\Models\SchoolYear;
 use App\Models\Student;
 use App\Models\TransferRecord;
@@ -14,6 +15,8 @@ class TransferController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $parentStudentIds = $this->parentStudentIds($request);
+
         $records = TransferRecord::query()
             ->with([
                 'student:id,first_name,last_name,lrn',
@@ -21,6 +24,7 @@ class TransferController extends Controller
                 'toSection:id,name',
                 'schoolYear:id,label',
             ])
+            ->when($parentStudentIds !== null, fn ($q) => $q->whereIn('student_id', $parentStudentIds ?: [0]))
             ->when($request->filled('student_id'), fn ($q) => $q->where('student_id', $request->input('student_id')))
             ->when($request->filled('transfer_type'), fn ($q) => $q->where('transfer_type', $request->input('transfer_type')))
             ->when($request->filled('school_year_id'), fn ($q) => $q->where('school_year_id', $request->input('school_year_id')))
@@ -33,19 +37,30 @@ class TransferController extends Controller
         ]);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $record = TransferRecord::with(['student', 'fromSection', 'toSection', 'schoolYear'])->findOrFail($id);
+        $this->authorizeParentStudent($request, (int) $record->student_id);
         return response()->json(['data' => $this->present($record)]);
     }
 
     public function store(Request $request): JsonResponse
     {
         $payload = $this->validatePayload($request);
+        $this->authorizeParentStudent($request, (int) $payload['student_id']);
         $payload['processed_by'] = $request->user()?->id;
+        $isParentRequest = $request->user()?->role === 'parent';
 
-        $record = DB::transaction(function () use ($payload) {
+        if ($isParentRequest) {
+            $payload['transfer_type'] = 'transferred_out';
+        }
+
+        $record = DB::transaction(function () use ($payload, $isParentRequest) {
             $record = TransferRecord::create($this->prepare($payload));
+
+            if ($isParentRequest) {
+                return $record;
+            }
 
             if ($record->transfer_type === 'transferred_out') {
                 Student::where('id', $record->student_id)->update(['status' => 'transferred_out']);
@@ -65,6 +80,7 @@ class TransferController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $record = TransferRecord::findOrFail($id);
+        $this->authorizeParentStudent($request, (int) $record->student_id);
         $payload = $this->validatePayload($request);
         $record->fill($this->prepare($payload))->save();
         $record->load(['student', 'fromSection', 'toSection', 'schoolYear']);
@@ -74,6 +90,7 @@ class TransferController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $record = TransferRecord::findOrFail($id);
+        $this->authorizeParentStudent(request(), (int) $record->student_id);
         $record->delete();
         return response()->json(['data' => true]);
     }
@@ -140,5 +157,31 @@ class TransferController extends Controller
             'created_at' => $record->created_at?->toIso8601String(),
             'updated_at' => $record->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * @return array<int>|null
+     */
+    private function parentStudentIds(Request $request): ?array
+    {
+        $user = $request->user();
+        if ($user?->role !== 'parent') {
+            return null;
+        }
+
+        $parent = ParentGuardian::query()
+            ->where('user_id', $user->id)
+            ->orWhere('email', $user->email)
+            ->first();
+
+        return $parent?->students()->pluck('students.id')->map(fn ($id) => (int) $id)->all() ?? [];
+    }
+
+    private function authorizeParentStudent(Request $request, int $studentId): void
+    {
+        $ids = $this->parentStudentIds($request);
+        if ($ids !== null && ! in_array($studentId, $ids, true)) {
+            abort(403, 'This learner is not linked to your guardian account.');
+        }
     }
 }

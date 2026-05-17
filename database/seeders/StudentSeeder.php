@@ -40,9 +40,7 @@ class StudentSeeder extends Seeder
 
     /** @var list<string> Elementary + JHS-ish grades used for synthetic enrollments */
     protected const EXTRA_GRADE_NAMES = [
-        'Kindergarten 1',
-        'Kindergarten 2',
-        'Grade 1',
+        'Kindergarten',        'Grade 1',
         'Grade 2',
         'Grade 3',
         'Grade 4',
@@ -191,8 +189,7 @@ class StudentSeeder extends Seeder
                 ->get();
 
             $perGrade = match ($grade->name) {
-                'Kindergarten 1', 'Kindergarten 2', 'Grade 1' => 6,
-                'Grade 6' => 4,
+                'Kindergarten', 'Grade 1' => 6,                'Grade 6' => 4,
                 default => 5,
             };
 
@@ -234,11 +231,6 @@ class StudentSeeder extends Seeder
                 }
 
                 $status = $assignedSection === null ? 'pending' : 'enrolled';
-
-                $classSession = null;
-                if ($assignedSection && in_array($assignedSection->session, ['AM', 'PM'], true)) {
-                    $classSession = $assignedSection->session;
-                }
 
                 Enrollment::firstOrCreate(
                     [

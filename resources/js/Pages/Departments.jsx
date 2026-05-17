@@ -3,8 +3,7 @@ import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { http } from "@/lib/api";
 import { useAuth } from "@/lib/AuthContext";
-import { Plus, Trash2, Building2, Edit2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Plus, Trash2, Building2 } from "lucide-react";import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -39,8 +38,6 @@ export default function Departments() {
   const [modalDept, setModalDept] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
-  const [editingDept, setEditingDept] = useState(null);
-  const [editName, setEditName] = useState("");
 
   const { data: departments = [] } = useQuery({
     queryKey: ["departments"],
@@ -98,25 +95,6 @@ export default function Departments() {
     onError: (err) => toast.error(err?.response?.data?.message ?? err.message),
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      const { data } = await http.put(`/departments/${editingDept.id}`, {
-        name: editName.trim(),
-      });
-      return data?.data;
-    },
-    onSuccess: (department) => {
-      toast.success("Department updated");
-      setEditingDept(null);
-      setEditName("");
-      qc.invalidateQueries({ queryKey: ["departments"] });
-      if (modalDept?.id === department?.id) {
-        setModalDept(department);
-      }
-    },
-    onError: (err) => toast.error(err?.response?.data?.message ?? err.message),
-  });
-
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
       await http.delete(`/departments/${id}`);
@@ -138,10 +116,7 @@ export default function Departments() {
   }
 
   const openModal = (d) => setModalDept(d);
-  const openEdit = (d) => {
-    setEditingDept(d);
-    setEditName(d.name ?? "");
-  };
+ origin/fix
 
   return (
     <div className="space-y-5">
@@ -150,8 +125,8 @@ export default function Departments() {
         description="Create departments to organize subjects with assigned teachers. Departments are independent and can contain subjects for multiple grades."
         action={
           <Button
-            className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
-            onClick={() => {
+
+            className="bg-[#1e3a5f] hover:bg-[#2c5282]"            onClick={() => {
               setNewName("");
               setAddOpen(true);
             }}
@@ -175,8 +150,7 @@ export default function Departments() {
                 <div className="min-w-0">
                   <button
                     type="button"
-                    className="text-left font-medium text-slate-900 hover:text-[var(--theme-primary)] underline-offset-2 hover:underline"
-                    onClick={() => openModal(d)}
+                    className="text-left font-medium text-slate-900 hover:text-[#1e3a5f] underline-offset-2 hover:underline"                    onClick={() => openModal(d)}
                   >
                     {d.name}
                   </button>
@@ -189,15 +163,11 @@ export default function Departments() {
                 <Button size="sm" variant="secondary" className="h-8" onClick={() => openModal(d)}>
                   View subjects
                 </Button>
-                <Button size="sm" variant="outline" className="h-8" onClick={() => openEdit(d)}>
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Edit
-                </Button>
+ origin/fix
                 <Button
                   size="sm"
                   variant="ghost"
                   className="h-8 text-red-600"
-                  isLoading={deleteMutation.isPending && deleteMutation.variables === d.id}
                   onClick={() => {
                     if (confirm("Delete this department and all its subject–teacher links?")) {
                       deleteMutation.mutate(d.id);
@@ -236,44 +206,10 @@ export default function Departments() {
             </Button>
             <Button
               disabled={!newName.trim() || createMutation.isPending}
-              isLoading={createMutation.isPending}
-              loadingText="Creating..."
+ origin/fix
               onClick={() => createMutation.mutate()}
             >
               Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!editingDept} onOpenChange={(open) => !open && setEditingDept(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit department</DialogTitle>
-            <DialogDescription>Update the department name shown across teacher and subject management.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div>
-              <Label htmlFor="edit-dept-name">Department Name</Label>
-              <Input
-                id="edit-dept-name"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingDept(null)} disabled={updateMutation.isPending}>
-              Cancel
-            </Button>
-            <Button
-              disabled={!editName.trim()}
-              isLoading={updateMutation.isPending}
-              loadingText="Saving..."
-              onClick={() => updateMutation.mutate()}
-            >
-              Save
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -302,7 +238,7 @@ export default function Departments() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="text-xs">Subject</TableHead>
-                        <TableHead className="text-xs">Grade Level</TableHead>
+ origin/fix
                         <TableHead className="text-xs">Code</TableHead>
                         <TableHead className="text-xs">Minutes/Day</TableHead>
                       </TableRow>

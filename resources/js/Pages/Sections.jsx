@@ -24,9 +24,6 @@ import {
 import PageHeader from "../components/shared/PageHeader";
 import EmptyState from "../components/shared/EmptyState";
 
-<<<<<<< Updated upstream
-const GRADE_LEVELS = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10"];
-=======
 const GRADE_LEVELS = [
   "Kindergarten 1",
   "Kindergarten 2",
@@ -60,7 +57,7 @@ function enrollmentDisplayName(e) {
   const parts = [s.last_name, s.first_name, s.middle_name].filter(Boolean);
   return parts.join(", ") || "—";
 }
->>>>>>> Stashed changes
+const GRADE_LEVELS = ["Kindergarten","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6"];
 
 export default function Sections() {
   const { user } = useAuth();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ParentGuardian;
+use App\Models\Student;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -60,6 +61,35 @@ class ParentController extends Controller
         return response()->json(['data' => true]);
     }
 
+    public function registerStudent(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        $parent = ParentGuardian::where('user_id', $user->id)->firstOrFail();
+
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'max:80'],
+            'middle_name' => ['nullable', 'string', 'max:80'],
+            'last_name' => ['required', 'string', 'max:80'],
+            'suffix' => ['nullable', 'string', 'max:20'],
+            'birth_date' => ['required', 'date'],
+            'gender' => ['required', Rule::in(['Male', 'Female'])],
+            'lrn' => ['nullable', 'string', 'max:20'],
+            'birth_place' => ['nullable', 'string', 'max:150'],
+            'mother_tongue' => ['nullable', 'string', 'max:80'],
+            'ip_ethnic_group' => ['nullable', 'string', 'max:80'],
+            'religion' => ['nullable', 'string', 'max:80'],
+            'house_street_sitio' => ['nullable', 'string', 'max:150'],
+            'barangay' => ['nullable', 'string', 'max:80'],
+            'municipality_city' => ['nullable', 'string', 'max:80'],
+            'province' => ['nullable', 'string', 'max:80'],
+        ]);
+
+        $student = Student::create($data);
+        $parent->students()->attach($student->id);
+
+        return response()->json(['data' => $student], 201);
+    }
+
     private function rules(): array
     {
         return [
@@ -71,6 +101,13 @@ class ParentController extends Controller
             'contact_number' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:191'],
             'address' => ['nullable', 'string', 'max:500'],
+            'mother_tongue' => ['nullable', 'string', 'max:80'],
+            'ip_ethnic_group' => ['nullable', 'string', 'max:80'],
+            'religion' => ['nullable', 'string', 'max:80'],
+            'house_street_sitio' => ['nullable', 'string', 'max:150'],
+            'barangay' => ['nullable', 'string', 'max:80'],
+            'municipality_city' => ['nullable', 'string', 'max:80'],
+            'province' => ['nullable', 'string', 'max:80'],
         ];
     }
 }

@@ -1,15 +1,20 @@
 import AppLayout from '@/Layouts/AppLayout';
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { http } from "@/lib/api";
-import { ClipboardCheck, AlertTriangle, TrendingUp, Loader2 } from "lucide-react";
+import { ClipboardCheck, AlertTriangle, TrendingUp, Loader2, Download, FileText, Send, Bot, UserRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import PageHeader from "../components/shared/PageHeader";
 import EmptyState from "../components/shared/EmptyState";
+import { toast } from "sonner";
 
 const gradeColor = (g) => {
   if (g == null) return "text-slate-400";
@@ -20,7 +25,18 @@ const gradeColor = (g) => {
 };
 
 export default function ParentPortal() {
+  const queryClient = useQueryClient();
   const [selectedChildId, setSelectedChildId] = useState("");
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferForm, setTransferForm] = useState({
+    to_school: "",
+    reason: "",
+    transfer_date: new Date().toISOString().slice(0, 10),
+  });
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([
+    { role: "assistant", text: "Hello. I can help with grades, attendance, document exports, enrollment, and transfer requests." },
+  ]);
 
   const { data: portal, isLoading, error } = useQuery({
     queryKey: ['parent-portal'],
@@ -40,6 +56,32 @@ export default function ParentPortal() {
   }, [children, selectedChildId]);
 
   const child = children.find(c => String(c.student.id) === String(selectedChildId)) || children[0];
+
+  const transferMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await http.post('/transfers', {
+        student_id: child.student.id,
+        school_year_id: child.enrollment?.school_year_id ?? schoolYear?.id ?? null,
+        transfer_type: 'transferred_out',
+        transfer_date: transferForm.transfer_date,
+        to_school: transferForm.to_school || null,
+        reason: transferForm.reason || null,
+        documents_received: [],
+      });
+      return data?.data ?? data;
+    },
+    onSuccess: async () => {
+      toast.success('Transfer request submitted');
+      setTransferOpen(false);
+      setTransferForm({
+        to_school: "",
+        reason: "",
+        transfer_date: new Date().toISOString().slice(0, 10),
+      });
+      await queryClient.invalidateQueries({ queryKey: ['parent-portal'] });
+    },
+    onError: (err) => toast.error(err?.response?.data?.message ?? 'Unable to submit transfer request'),
+  });
 
   if (isLoading) {
     return (
@@ -71,8 +113,12 @@ export default function ParentPortal() {
         <PageHeader title="Parent Portal" description="No linked children found." />
         <EmptyState
           icon={AlertTriangle}
-          title="No children linked"
-          description="Please contact the school registrar to link your account to your child's record."
+          title="No children linked yet"
+          description={
+            <span className="text-sm text-slate-600">
+              Register learner details first, or ask the registrar to connect an existing MIS record to your guardian profile.
+            </span>
+          }
         />
       </div>
     );
@@ -83,9 +129,55 @@ export default function ParentPortal() {
   const grades = child.grades ?? [];
   const attendance = child.attendance_summary ?? { present: 0, absent: 0, late: 0, excused: 0, total: 0 };
   const violations = child.violations ?? [];
+  const transferRequests = child.transfer_requests ?? [];
 
   const finals = grades.map(g => g.final).filter(v => v != null);
   const genAvg = finals.length ? Math.round(finals.reduce((a, b) => a + b, 0) / finals.length) : null;
+  const reportParams = new URLSearchParams({
+    student_id: child.student.id,
+    ...(child.enrollment?.school_year_id ? { school_year_id: child.enrollment.school_year_id } : {}),
+  }).toString();
+  const documentLinks = [
+    { label: "Report card", href: `/api/v1/reports/form138?${reportParams}` },
+    { label: "Form 137", href: `/api/v1/reports/form137?student_id=${child.student.id}` },
+    { label: "Good moral certificate", href: `/api/v1/reports/good-moral?${reportParams}` },
+  ];
+  const submitTransfer = () => {
+    if (!transferForm.reason.trim()) {
+      toast.error('Reason for transfer is required.');
+      return;
+    }
+    transferMutation.mutate();
+  };
+  const answerParentQuestion = (text) => {
+    const q = text.toLowerCase();
+    if (q.includes('grade') || q.includes('average') || q.includes('report')) {
+      return `The current general average shown for ${child.student.first_name} is ${genAvg ?? 'not available yet'}. Open the Grades tab or export the report card from Documents.`;
+    }
+    if (q.includes('attendance') || q.includes('absent') || q.includes('late')) {
+      return `${child.student.first_name} has ${attendance.absent ?? 0} absences and ${attendance.late ?? 0} late marks in the active school year.`;
+    }
+    if (q.includes('transfer')) {
+      return 'Open the Transfer Request tab, enter the destination school and reason, then submit. The registrar will review it before records are finalized.';
+    }
+    if (q.includes('form 137') || q.includes('good moral') || q.includes('certificate') || q.includes('document')) {
+      return 'Open the Documents tab to export the report card, Form 137, or good moral certificate as PDF.';
+    }
+    if (q.includes('enroll')) {
+      return 'School staff handle official enrollment placement. If a learner is missing or unassigned, contact the registrar.';
+    }
+    return 'I can answer questions about grades, attendance, documents, enrollment, and transfer requests for the selected learner.';
+  };
+  const sendChat = () => {
+    const text = chatInput.trim();
+    if (!text) return;
+    setChatMessages((messages) => [
+      ...messages,
+      { role: "user", text },
+      { role: "assistant", text: answerParentQuestion(text) },
+    ]);
+    setChatInput("");
+  };
 
   return (
     <div>
@@ -163,10 +255,43 @@ export default function ParentPortal() {
 
       <Tabs defaultValue="grades">
         <TabsList className="mb-5">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="violations">Violations</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="transfer">Transfer Request</TabsTrigger>
+          <TabsTrigger value="chatbot">Chatbot</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="profile">
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="bg-slate-50 py-3 px-5">
+              <CardTitle className="text-sm">Student Profile</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+              {[
+                ['Full name', child.student.name],
+                ['LRN', child.student.lrn || 'Pending'],
+                ['Gender', child.student.gender || '—'],
+                ['Birth date', child.student.birth_date || '—'],
+                ['Birth place', child.student.birth_place || '—'],
+                ['Status', child.student.status || '—'],
+                ['Mother tongue', child.student.mother_tongue || '—'],
+                ['IP / Ethnic group', child.student.ip_ethnic_group || '—'],
+                ['Religion', child.student.religion || '—'],
+                ['Address', child.student.address || '—'],
+                ['Grade level', child.enrollment?.grade_level || 'Unassigned'],
+                ['Section', child.enrollment?.section || 'Unassigned'],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <p className="text-xs uppercase tracking-wide text-slate-400 font-semibold">{label}</p>
+                  <p className="text-slate-800 mt-1">{value}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="grades">
           <Card className="border-0 shadow-sm overflow-hidden">

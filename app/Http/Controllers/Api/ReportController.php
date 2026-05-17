@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\Enrollment;
 use App\Models\GradeLevel;
+use App\Models\ParentGuardian;
 use App\Models\Quarter;
 use App\Models\SchoolYear;
 use App\Models\Section;
@@ -194,6 +195,7 @@ class ReportController extends Controller
     {
         $request->validate(['student_id' => 'required|integer|exists:students,id']);
         $student = Student::findOrFail($request->integer('student_id'));
+        $this->authorizeParentStudent($request, $student->id);
 
         $enrollments = Enrollment::query()
             ->with(['gradeLevel', 'section', 'schoolYear'])
@@ -241,6 +243,7 @@ class ReportController extends Controller
             'school_year_id' => 'sometimes|integer|exists:school_years,id',
         ]);
         $student = Student::findOrFail($request->integer('student_id'));
+        $this->authorizeParentStudent($request, $student->id);
 
         $report = $sf9->buildForStudent(
             $student->id,
@@ -261,6 +264,34 @@ class ReportController extends Controller
         return response()
             ->download($path, $this->pdfFilename('Form138_'.$student->last_name, null, $report['enrollment']->schoolYear))
             ->deleteFileAfterSend();
+    }
+
+    public function goodMoral(Request $request): Response
+    {
+        $request->validate([
+            'student_id' => 'required|integer|exists:students,id',
+            'school_year_id' => 'sometimes|integer|exists:school_years,id',
+        ]);
+
+        $student = Student::findOrFail($request->integer('student_id'));
+        $this->authorizeParentStudent($request, $student->id);
+
+        $enrollment = Enrollment::query()
+            ->with(['gradeLevel', 'section', 'schoolYear'])
+            ->where('student_id', $student->id)
+            ->when($request->filled('school_year_id'), fn ($q) => $q->where('school_year_id', $request->integer('school_year_id')))
+            ->orderByDesc('id')
+            ->first();
+
+        $pdf = Pdf::loadView('reports.good-moral', [
+            'title' => 'Certificate of Good Moral Character',
+            'school' => $this->schoolMeta(),
+            'student' => $student,
+            'enrollment' => $enrollment,
+            'issuedAt' => now(),
+        ]);
+
+        return $pdf->download($this->pdfFilename('GoodMoral_'.$student->last_name, null, $enrollment?->schoolYear));
     }
 
     public function pir(Request $request): Response
@@ -363,5 +394,23 @@ class ReportController extends Controller
         }
 
         return $matrix;
+    }
+
+    private function authorizeParentStudent(Request $request, int $studentId): void
+    {
+        $user = $request->user();
+        if ($user?->role !== 'parent') {
+            return;
+        }
+
+        $parent = ParentGuardian::query()
+            ->where('user_id', $user->id)
+            ->orWhere('email', $user->email)
+            ->first();
+
+        $isLinked = $parent?->students()->where('students.id', $studentId)->exists() ?? false;
+        if (! $isLinked) {
+            abort(403, 'This learner is not linked to your guardian account.');
+        }
     }
 }

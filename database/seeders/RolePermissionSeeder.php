@@ -25,6 +25,7 @@ class RolePermissionSeeder extends Seeder
         'enrollments.create',
         'enrollments.update',
         'enrollments.delete',
+        'enrollments.assign_section',
 
         'sections.view',
         'sections.create',

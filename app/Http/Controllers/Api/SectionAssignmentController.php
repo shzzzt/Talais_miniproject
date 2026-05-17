@@ -31,8 +31,7 @@ class SectionAssignmentController extends Controller
             ->with([
                 'student:id,lrn,first_name,middle_name,last_name,gender',
                 'gradeLevel:id,name',
-                'section:id,name,grade_level_id,school_year_id,type,session',
-                'schoolYear:id,label,is_active',
+                'section:id,name,grade_level_id,school_year_id',                'schoolYear:id,label,is_active',
             ])
             ->where('school_year_id', $yearId)
             ->whereIn('status', ['enrolled', 'pending']);
@@ -82,12 +81,23 @@ class SectionAssignmentController extends Controller
 
         $sectionId = $validated['section_id'] ?? null;
 
-        $enrollment->update(['section_id' => $sectionId]);
-        $enrollment->refresh();
-        Enrollment::assertCompatibleSection($enrollment, $sectionId !== null ? (int) $sectionId : null);
-        $enrollment->syncClassSessionFromSection();
-        $enrollment->save();
+        if ($sectionId !== null) {
+            $section = Section::findOrFail($sectionId);
 
+            abort_unless(
+                (int) $section->school_year_id === (int) $enrollment->school_year_id,
+                422,
+                'Section must belong to the same school year as the enrollment.',
+            );
+
+            abort_unless(
+                (int) $section->grade_level_id === (int) $enrollment->grade_level_id,
+                422,
+                'Section must match the enrollment grade level.',
+            );
+        }
+
+        $enrollment->update(['section_id' => $sectionId]);
         return response()->json([
             'data' => $enrollment->fresh()->load('student', 'gradeLevel', 'section', 'schoolYear'),
         ]);

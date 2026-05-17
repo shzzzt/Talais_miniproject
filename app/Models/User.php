@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -18,6 +18,7 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory;
     use HasRoles;
     use LogsActivity;
+    use MustVerifyEmailTrait;
     use Notifiable;
     use SoftDeletes;
 
@@ -26,7 +27,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
-        'is_grade_level_head',
         'phone_number',
         'status',
         'avatar',
@@ -49,7 +49,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_grade_level_head' => 'boolean',
             'two_factor_enabled' => 'boolean',
             'last_login_at' => 'datetime',
             'locked_until' => 'datetime',
@@ -60,7 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'role', 'status', 'is_grade_level_head'])
+            ->logOnly(['name', 'email', 'role', 'status'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -88,6 +87,29 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isFaculty(): bool
     {
         return $this->role === 'faculty';
+    }
+
+    /**
+     * True when this account is faculty per `users.role` or Spatie (keeps gates/UI working if roles are out of sync).
+     */
+    public function hasFacultyRole(): bool
+    {
+        return $this->role === 'faculty' || $this->hasRole('faculty');
+    }
+
+    public function hasAdminRole(): bool
+    {
+        return $this->role === 'admin' || $this->hasRole('admin');
+    }
+
+    public function hasSchoolAdminRole(): bool
+    {
+        return $this->role === 'school_admin' || $this->hasRole('school_admin');
+    }
+
+    public function hasParentRole(): bool
+    {
+        return $this->role === 'parent' || $this->hasRole('parent');
     }
 
     public function isParent(): bool

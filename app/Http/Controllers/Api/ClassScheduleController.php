@@ -4,9 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClassSchedule;
+use App\Models\Faculty;
 use App\Models\SchoolYear;
+use App\Models\Section;
+use App\Models\Subject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class ClassScheduleController extends Controller
 {
@@ -55,36 +60,46 @@ class ClassScheduleController extends Controller
     public function show(string $id): JsonResponse
     {
         $record = ClassSchedule::with(['section.gradeLevel', 'subject', 'faculty'])->findOrFail($id);
+
         return response()->json(['data' => $this->present($record)]);
     }
 
     public function store(Request $request): JsonResponse
     {
+        Gate::authorize('manage-class-schedule-records');
+
         $payload = $this->validatePayload($request);
         $record = ClassSchedule::create($this->prepare($payload));
         $record->load(['section.gradeLevel', 'subject', 'faculty']);
+
         return response()->json(['data' => $this->present($record)], 201);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
+        Gate::authorize('manage-class-schedule-records');
+
         $record = ClassSchedule::findOrFail($id);
         $payload = $this->validatePayload($request);
         $record->fill($this->prepare($payload))->save();
         $record->load(['section.gradeLevel', 'subject', 'faculty']);
+
         return response()->json(['data' => $this->present($record)]);
     }
 
     public function destroy(string $id): JsonResponse
     {
+        Gate::authorize('manage-class-schedule-records');
+
         $record = ClassSchedule::findOrFail($id);
         $record->delete();
+
         return response()->json(['data' => true]);
     }
 
     private function validatePayload(Request $request): array
     {
-        return $request->validate([
+        $payload = $request->validate([
             'school_year_id' => ['nullable', 'integer', 'exists:school_years,id'],
             'section_id' => ['required', 'integer', 'exists:sections,id'],
             'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
@@ -94,81 +109,6 @@ class ClassScheduleController extends Controller
             'time_start' => ['required', 'string'],
             'time_end' => ['required', 'string'],
         ]);
-<<<<<<< Updated upstream
-=======
-
-        $section = Section::query()
-            ->with('gradeLevel:id,name')
-            ->select(['id', 'grade_level_id', 'adviser_id'])
-            ->findOrFail($payload['section_id']);
-        $isKinder = $this->isKindergartenSplitGrade($section->gradeLevel?->name);
-
-        if ($isKinder) {
-            if (! empty($payload['subject_id'])) {
-                throw ValidationException::withMessages([
-                    'subject_id' => 'Kindergarten 1 and Kindergarten 2 schedules do not use subjects.',
-                ]);
-            }
-
-            $faculty = Faculty::query()
-                ->select(['id', 'user_id'])
-                ->where('user_id', $section->adviser_id)
-                ->first();
-
-            if (! $faculty) {
-                throw ValidationException::withMessages([
-                    'faculty_id' => 'Assign a section adviser who has a teacher roster row before scheduling Kindergarten 1 or 2.',
-                ]);
-            }
-
-            $payload['subject_id'] = null;
-            $payload['faculty_id'] = $faculty->id;
-
-            return $payload;
-        }
-
-        if (empty($payload['subject_id'])) {
-            throw ValidationException::withMessages([
-                'subject_id' => 'Select a subject for this section.',
-            ]);
-        }
-
-        $subjectMatchesGradeLevel = Subject::query()
-            ->whereKey($payload['subject_id'])
-            ->whereIn('subjects.id', function ($subquery) use ($section) {
-                $subquery
-                    ->select('grade_level_subjects.subject_id')
-                    ->from('grade_level_subjects')
-                    ->where('grade_level_subjects.grade_level_id', $section->grade_level_id)
-                    ->whereRaw('grade_level_subjects.id = (
-                        select min(primary_grade_level_subjects.id)
-                        from grade_level_subjects as primary_grade_level_subjects
-                        where primary_grade_level_subjects.subject_id = grade_level_subjects.subject_id
-                    )');
-            })
-            ->exists();
-
-        if (! $subjectMatchesGradeLevel) {
-            throw ValidationException::withMessages([
-                'subject_id' => 'The selected subject is not assigned to the selected section grade level.',
-            ]);
-        }
-
-        if (! empty($payload['faculty_id'])) {
-            $subject = Subject::query()->select(['id', 'department_id'])->findOrFail($payload['subject_id']);
-            $faculty = Faculty::query()->select(['id', 'department_id'])->findOrFail($payload['faculty_id']);
-            $subjectDepartmentId = $subject->department_id;
-            $facultyDepartmentId = $faculty->department_id;
-
-            if ((int) $subjectDepartmentId !== (int) $facultyDepartmentId || ($subjectDepartmentId === null) !== ($facultyDepartmentId === null)) {
-                throw ValidationException::withMessages([
-                    'faculty_id' => 'The selected teacher is not assigned to the selected subject department.',
-                ]);
-            }
-        }
-
-        return $payload;
->>>>>>> Stashed changes
     }
 
     private function prepare(array $payload): array
@@ -195,6 +135,7 @@ class ClassScheduleController extends Controller
             return max(1, min(7, (int) $value));
         }
         $key = strtolower((string) $value);
+
         return self::DAY_TO_INT[$key] ?? 1;
     }
 
@@ -202,7 +143,10 @@ class ClassScheduleController extends Controller
     {
         $time = trim($time);
         $ts = strtotime($time);
-        if ($ts === false) return $time;
+        if ($ts === false) {
+            return $time;
+        }
+
         return date('H:i:s', $ts);
     }
 

@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import PageHeader from "../components/shared/PageHeader";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { http } from "@/lib/api";
+import { useAuth } from "@/lib/AuthContext";
 import { ROLE_BADGE_CLASSES, ROLE_LABELS } from "@/lib/roles";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -29,7 +30,6 @@ const emptyForm = {
     role: "faculty",
     status: "active",
     phone_number: "",
-    is_grade_level_head: false,
     two_factor_enabled: false,
     password: "",
     password_confirmation: "",
@@ -37,6 +37,18 @@ const emptyForm = {
 
 export default function UserManagement() {
     const qc = useQueryClient();
+    const { user: authUser } = useAuth();
+
+    const assignableRoles =
+        authUser?.role === "admin"
+            ? ["admin", "school_admin"]
+            : ["school_admin", "faculty"];
+
+    const statRoles =
+        authUser?.role === "admin"
+            ? ["admin", "school_admin", "faculty"]
+            : ["school_admin", "faculty"];
+
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState(null);
     const [search, setSearch] = useState("");
@@ -119,7 +131,6 @@ export default function UserManagement() {
             role: form.role,
             status: form.status,
             phone_number: form.phone_number || null,
-            is_grade_level_head: !!form.is_grade_level_head,
             two_factor_enabled: !!form.two_factor_enabled,
         };
         if (form.password) {
@@ -139,7 +150,6 @@ export default function UserManagement() {
             role: u.role ?? "faculty",
             status: u.status ?? "active",
             phone_number: u.phone_number ?? "",
-            is_grade_level_head: !!u.is_grade_level_head,
             two_factor_enabled: !!u.two_factor_enabled,
         });
         setShowForm(true);
@@ -147,7 +157,10 @@ export default function UserManagement() {
 
     const openCreate = () => {
         setEditing(null);
-        setForm(emptyForm);
+        setForm({
+            ...emptyForm,
+            role: authUser?.role === "admin" ? "school_admin" : "faculty",
+        });
         setShowForm(true);
     };
 
@@ -163,7 +176,11 @@ export default function UserManagement() {
         <div>
             <PageHeader
                 title="User Management"
-                description="Manage system administrators, school admins, faculty, and parent accounts"
+                description={
+                    authUser?.role === "school_admin"
+                        ? "Create and manage staff accounts only. Guardian accounts are created through the public parent registration flow, not here."
+                        : "Create and manage system and school admin accounts and teacher logins. School admins designate grade level heads under Teachers in the sidebar."
+                }
                 action={
                     <Button onClick={openCreate} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
                         <Plus className="w-4 h-4 mr-2" /> Add User
@@ -171,8 +188,8 @@ export default function UserManagement() {
                 }
             />
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-                {["admin", "school_admin", "faculty", "parent"].map((role) => (
+            <div className="grid grid-cols-2 gap-4 mb-5 sm:grid-cols-3 xl:grid-cols-5">
+                {statRoles.map((role) => (
                     <Card key={role} className="border-0 shadow-sm p-4">
                         <p className="text-xs text-slate-400 uppercase tracking-wider">
                             {ROLE_LABELS[role] ?? role}
@@ -204,7 +221,6 @@ export default function UserManagement() {
                             <SelectItem value="admin">System Administrator</SelectItem>
                             <SelectItem value="school_admin">School Admin</SelectItem>
                             <SelectItem value="faculty">Faculty</SelectItem>
-                            <SelectItem value="parent">Parent</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -247,11 +263,6 @@ export default function UserManagement() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium">{u.name}</p>
-                                                {u.is_grade_level_head && (
-                                                    <p className="text-[10px] uppercase tracking-wide text-amber-600">
-                                                        Grade Level Head
-                                                    </p>
-                                                )}
                                             </div>
                                         </div>
                                     </TableCell>
@@ -363,10 +374,11 @@ export default function UserManagement() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="admin">System Administrator</SelectItem>
-                                        <SelectItem value="school_admin">School Admin</SelectItem>
-                                        <SelectItem value="faculty">Faculty</SelectItem>
-                                        <SelectItem value="parent">Parent</SelectItem>
+                                        {assignableRoles.map((r) => (
+                                            <SelectItem key={r} value={r}>
+                                                {ROLE_LABELS[r] ?? r}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -394,22 +406,6 @@ export default function UserManagement() {
                                 onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
                             />
                         </div>
-                        {form.role === "faculty" && (
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                <div>
-                                    <p className="text-sm font-medium">Grade Level Head</p>
-                                    <p className="text-xs text-slate-400">
-                                        Allow this faculty to review &amp; finalize grades for a grade level.
-                                    </p>
-                                </div>
-                                <Switch
-                                    checked={form.is_grade_level_head}
-                                    onCheckedChange={(v) =>
-                                        setForm({ ...form, is_grade_level_head: v })
-                                    }
-                                />
-                            </div>
-                        )}
                         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                             <div>
                                 <p className="text-sm font-medium">Two-Factor Authentication</p>

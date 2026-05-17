@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -30,6 +31,14 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $user = Auth::user();
+
+        if ($user instanceof User && filled($user->role)) {
+            Role::findOrCreate($user->role, 'web');
+
+            if (! $user->hasRole($user->role)) {
+                $user->syncRoles([$user->role]);
+            }
+        }
 
         if ($user && $user->two_factor_enabled) {
             Auth::guard('web')->logout();

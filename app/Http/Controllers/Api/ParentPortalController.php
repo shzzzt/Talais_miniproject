@@ -8,6 +8,7 @@ use App\Models\ParentGuardian;
 use App\Models\SchoolYear;
 use App\Models\StudentGrade;
 use App\Models\StudentViolation;
+use App\Models\TransferRecord;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -44,6 +45,7 @@ class ParentPortalController extends Controller
             $grades = [];
             $attendance = ['present' => 0, 'absent' => 0, 'late' => 0, 'excused' => 0, 'total' => 0];
             $violations = [];
+            $transfers = [];
 
             if ($enrollment) {
                 $grades = StudentGrade::with(['subject', 'quarter'])
@@ -81,6 +83,12 @@ class ParentPortalController extends Controller
                 ->limit(50)
                 ->get(['id', 'date_of_incident', 'violation_type', 'severity', 'description', 'action_taken']);
 
+            $transfers = TransferRecord::query()
+                ->where('student_id', $student->id)
+                ->orderByDesc('transfer_date')
+                ->limit(20)
+                ->get(['id', 'transfer_type', 'transfer_date', 'to_school', 'reason', 'processed_by', 'created_at']);
+
             return [
                 'student' => [
                     'id' => $student->id,
@@ -88,8 +96,21 @@ class ParentPortalController extends Controller
                     'name' => trim($student->last_name.', '.$student->first_name),
                     'first_name' => $student->first_name,
                     'last_name' => $student->last_name,
+                    'middle_name' => $student->middle_name,
+                    'suffix' => $student->suffix,
                     'gender' => $student->gender,
                     'birth_date' => $student->birth_date?->toDateString(),
+                    'birth_place' => $student->birth_place,
+                    'mother_tongue' => $student->mother_tongue,
+                    'ip_ethnic_group' => $student->ip_ethnic_group,
+                    'religion' => $student->religion,
+                    'address' => collect([
+                        $student->house_street_sitio,
+                        $student->barangay,
+                        $student->municipality_city,
+                        $student->province,
+                    ])->filter()->join(', '),
+                    'status' => $student->status,
                 ],
                 'enrollment' => $enrollment ? [
                     'id' => $enrollment->id,
@@ -101,6 +122,7 @@ class ParentPortalController extends Controller
                 'grades' => $grades,
                 'attendance_summary' => $attendance,
                 'violations' => $violations,
+                'transfer_requests' => $transfers,
             ];
         });
 

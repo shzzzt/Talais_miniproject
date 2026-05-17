@@ -191,8 +191,7 @@ export default function ParentEnrollment() {
           description="Complete grade and section assignments for each learner registered under your guardian profile. Names and demographics were captured during online registration."
         />
         <Link href="/ParentEnrollStudent">
-          <Button className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
-            <UserPlus className="w-4 h-4 mr-2" />
+          <Button className="bg-[#1e3a5f] hover:bg-[#2c5282]">            <UserPlus className="w-4 h-4 mr-2" />
             Enroll Student
           </Button>
         </Link>
@@ -218,8 +217,7 @@ export default function ParentEnrollment() {
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4 space-y-1">
           <p className="text-xs uppercase tracking-wide text-slate-400 font-semibold">Guardian on file</p>
-          <p className="font-medium text-[var(--theme-primary)]">
-            {guardian.first_name} {guardian.middle_name} {guardian.last_name}{' '}
+          <p className="font-medium text-[#1e3a5f]">            {guardian.first_name} {guardian.middle_name} {guardian.last_name}{' '}
             <Badge variant="outline">{guardian.relationship}</Badge>
           </p>
           <p className="text-sm text-slate-600">
@@ -428,8 +426,7 @@ export default function ParentEnrollment() {
             <Button
               onClick={submitEnrollment}
               disabled={enrollmentMutation.isPending}
-              className="bg-[var(--theme-primary)]"
-            >
+              className="bg-[#1e3a5f]"            >
               {enrollmentMutation.isPending ? 'Saving…' : 'Save enrollment'}
             </Button>
           </DialogFooter>

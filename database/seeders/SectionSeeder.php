@@ -16,9 +16,7 @@ class SectionSeeder extends Seeder
      * @var array<string, array{0:string,1:string}> grade level name → [section_a, section_b]
      */
     protected const NAMES_BY_GRADE = [
-        'Kindergarten 1' => ['Molave', 'Molave'],
-        'Kindergarten 2' => ['Molave', 'Molave'],
-        'Grade 1' => ['Rizal', 'Mabini'],
+        'Kindergarten' => ['Molave', 'Narra'],        'Grade 1' => ['Rizal', 'Mabini'],
         'Grade 2' => ['Bonifacio', 'Luna'],
         'Grade 3' => ['Silang', 'Dela Rosa'],
         'Grade 4' => ['Jacinto', 'Agoncillo'],
@@ -41,22 +39,15 @@ class SectionSeeder extends Seeder
 
         foreach (GradeLevel::query()->orderBy('level_order')->get() as $grade) {
             $pair = self::NAMES_BY_GRADE[$grade->name] ?? [''.$grade->name.' A', ''.$grade->name.' B'];
-            foreach ($pair as $index => $name) {
-                $usesSplit = $grade->usesSessionScheduling();
-                $session = $usesSplit
-                    ? ($index === 0 ? 'AM' : 'PM')
-                    : 'whole_day';
-
-                Section::firstOrCreate(
+            foreach ($pair as $name) {                Section::firstOrCreate(
                     [
                         'school_year_id' => $year->id,
                         'grade_level_id' => $grade->id,
                         'name' => $name,
-                        'session' => $session,
                     ],
                     [
-                        'type' => $index === 0 ? 'cream' : 'regular',
-                        'adviser_id' => $facultyUser?->id,
+                        'type' => 'regular',
+                        'session' => 'whole_day',                        'adviser_id' => $facultyUser?->id,
                         'max_capacity' => 40,
                     ]
                 );

@@ -12,6 +12,10 @@ class MeController extends Controller
     {
         $user = $request->user();
 
+        if ($user->hasFacultyRole()) {
+            $user->loadMissing(['faculty.gradeLevelHead']);
+        }
+
         return response()->json([
             'data' => [
                 'id' => $user->id,
@@ -19,10 +23,11 @@ class MeController extends Controller
                 'email' => $user->email,
                 'phone_number' => $user->phone_number,
                 'role' => $user->role,
-                'is_grade_level_head' => (bool) $user->is_grade_level_head,
                 'avatar' => $user->avatar,
                 'email_verified_at' => $user->email_verified_at?->toIso8601String(),
                 'two_factor_enabled' => (bool) $user->two_factor_enabled,
+                'is_grade_level_head' => $user->hasFacultyRole() && (bool) $user->faculty?->is_grade_level_head,
+                'grade_level_head_label' => $user->faculty?->gradeLevelHead?->name,
                 'permissions' => $user->getAllPermissions()->pluck('name'),
                 'roles' => $user->getRoleNames(),
                 'last_login_at' => $user->last_login_at,
