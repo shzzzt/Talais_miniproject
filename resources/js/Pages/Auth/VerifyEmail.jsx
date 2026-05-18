@@ -2,7 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 
 export default function VerifyEmail({ status }) {
-    const { post, processing } = useForm();
+    const { post, processing, errors } = useForm();
 
     const submit = (e) => {
         e.preventDefault();
@@ -24,8 +24,23 @@ export default function VerifyEmail({ status }) {
                         A new verification link has been sent to your email.
                     </div>
                 )}
-                <form onSubmit={submit} className="flex items-center justify-between">
-                    <Button type="submit" disabled={processing} className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]">
+                {status === 'verification-link-logged' && (
+                    <div className="text-sm text-amber-700">
+                        The verification link was generated, but this app is using the log mailer. It was saved in storage/logs/laravel.log instead of being sent to your inbox.
+                    </div>
+                )}
+                {errors.email && (
+                    <div className="text-sm text-red-600">
+                        {errors.email}
+                    </div>
+                )}
+                <div className="flex items-center justify-between">
+                    <Button
+                        type="button"
+                        disabled={processing}
+                        onClick={submit}
+                        className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)]"
+                    >
                         Resend Verification Email
                     </Button>
                     <Link
@@ -36,7 +51,7 @@ export default function VerifyEmail({ status }) {
                     >
                         Sign out
                     </Link>
-                </form>
+                </div>
             </div>
         </div>
     );

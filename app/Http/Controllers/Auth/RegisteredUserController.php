@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisteredParentRequest;
 use App\Models\ParentGuardian;
-use App\Models\Student;
 use App\Models\User;
 use App\Support\PhoneNumber;
 use Illuminate\Auth\Events\Registered;
@@ -48,12 +47,12 @@ class RegisteredUserController extends Controller
                 'password' => Hash::make($request->validated('password')),
                 'role' => 'parent',
                 'status' => 'active',
-                'email_verified_at' => now(),
+                'email_verified_at' => $accountEmail ? null : now(),
             ]);
 
             $user->assignRole('parent');
 
-            $parent = ParentGuardian::create([
+            ParentGuardian::create([
                 'user_id' => $user->id,
                 'first_name' => $g['first_name'],
                 'middle_name' => $g['middle_name'] ?? null,
@@ -72,37 +71,14 @@ class RegisteredUserController extends Controller
                 'province' => $g['province'] ?? null,
                 'address' => $this->guardianAddressLine($g),
             ]);
-
-            foreach ($request->validated('children') as $c) {
-                $student = Student::create([
-                    'lrn' => $c['lrn'] ?? null,
-                    'first_name' => $c['first_name'],
-                    'middle_name' => $c['middle_name'] ?? null,
-                    'last_name' => $c['last_name'],
-                    'suffix' => $c['suffix'] ?? null,
-                    'birth_date' => $c['birth_date'],
-                    'gender' => $c['gender'],
-                    'birth_place' => $c['birth_place'] ?? null,
-                    'mother_tongue' => $c['mother_tongue'] ?? null,
-                    'ip_ethnic_group' => $c['ip_ethnic_group'] ?? null,
-                    'religion' => $c['religion'] ?? null,
-                    'house_street_sitio' => $c['house_street_sitio'] ?? null,
-                    'barangay' => $c['barangay'] ?? null,
-                    'municipality_city' => $c['municipality_city'] ?? null,
-                    'province' => $c['province'] ?? null,
-                    'status' => 'pending_enrollment',
-                ]);
-
-                $parent->students()->attach($student->id, ['is_primary' => true]);
-            }
         });
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('parent-portal.index', absolute: false))
-            ->with('success', 'Account created. Your learner profile is now linked to your guardian account.');
+        return redirect(route('parent-home.index', absolute: false))
+            ->with('success', 'Account created. You can now use the parent portal.');
     }
 
     /**

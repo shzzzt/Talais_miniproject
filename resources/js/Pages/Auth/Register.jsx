@@ -1,9 +1,8 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import React from 'react';
-import { ArrowLeft, Check, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -17,35 +16,16 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-const emptyChild = () => ({
-  first_name: '',
-  middle_name: '',
-  last_name: '',
-  suffix: '',
-  birth_date: '',
-  gender: '',
-  lrn: '',
-  birth_place: '',
-  mother_tongue: '',
-  ip_ethnic_group: '',
-  religion: '',
-  house_street_sitio: '',
-  barangay: '',
-  municipality_city: '',
-  province: '',
-  same_address_as_guardian: false,
-});
-
 const inputClass = 'h-11 bg-white';
 const selectTriggerClass = 'h-11 bg-white';
 
 function RegistrationStepper({ step }) {
-  const labels = ['Account', 'Guardian', 'Learners'];
+  const labels = ['Account', 'Guardian'];
 
   return (
     <div className="mx-auto w-full max-w-lg select-none">
       <div className="flex items-center">
-        {[1, 2, 3].map((n, idx) => (
+        {[1, 2].map((n, idx) => (
           <React.Fragment key={n}>
             <div
               className={cn(
@@ -57,13 +37,13 @@ function RegistrationStepper({ step }) {
             >
               {step > n ? <Check className="h-5 w-5" strokeWidth={2.5} /> : n}
             </div>
-            {idx < 2 && (
+            {idx < 1 && (
               <div className={cn('mx-2 h-1 flex-1 rounded-full', step > n ? 'bg-[#1e3a5f]' : 'bg-slate-200')} />
             )}
           </React.Fragment>
         ))}
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-1 text-center">
+      <div className="mt-3 grid grid-cols-2 gap-1 text-center">
         {labels.map((label, i) => (
           <span
             key={label}
@@ -104,60 +84,21 @@ export default function Register() {
       municipality_city: '',
       province: '',
     },
-    children: [emptyChild()],
   });
 
   const updateGuardian = (patch) => {
     setData('guardian', { ...data.guardian, ...patch });
   };
 
-  const updateChild = (index, patch) => {
-    const next = [...data.children];
-    next[index] = { ...next[index], ...patch };
-    setData('children', next);
-  };
-
-  const addChild = () => {
-    setData('children', [...data.children, emptyChild()]);
-  };
-
-  const removeChild = (index) => {
-    if (data.children.length <= 1) return;
-    setData(
-      'children',
-      data.children.filter((_, i) => i !== index),
-    );
-  };
-
-  const applyGuardianAddress = (index, checked) => {
-    updateChild(index, {
-      same_address_as_guardian: checked,
-      ...(checked
-        ? {
-            house_street_sitio: data.guardian.house_street_sitio ?? '',
-            barangay: data.guardian.barangay ?? '',
-            municipality_city: data.guardian.municipality_city ?? '',
-            province: data.guardian.province ?? '',
-          }
-        : {}),
-    });
-  };
-
   const primaryAccountFilled =
     data.login_method === 'email' ? !!data.email.trim() : !!data.phone_number.trim();
   const canGoStep2 = primaryAccountFilled && !!data.password && !!data.password_confirmation;
-  const canGoStep3 = !!data.guardian.first_name && !!data.guardian.last_name && !!data.guardian.relationship;
-  const canSubmit =
-    canGoStep3 &&
-    data.children.length > 0 &&
-    data.children.every((child) => child.first_name && child.last_name && child.birth_date && child.gender);
+  const canSubmit = !!data.guardian.first_name && !!data.guardian.last_name && !!data.guardian.relationship;
 
   const stepBlurb =
     step === 1
       ? 'Pick how you will sign in: email or mobile. That one is required; you may add the other as optional.'
-      : step === 2
-        ? 'We use guardian details on official school records.'
-        : 'Add each child you want linked to this parent/guardian account. School staff will handle official enrollment placement.';
+      : 'We use guardian details on official school records.';
 
   const submit = (e) => {
     e.preventDefault();
@@ -183,7 +124,7 @@ export default function Register() {
               Create your TALAIS account
             </h1>
             <p className="max-w-xl text-sm text-slate-500 lg:max-w-none">
-              Three short steps: account, guardian, then learners.
+              Two short steps: account, then guardian details.
             </p>
           </div>
 
@@ -194,6 +135,14 @@ export default function Register() {
               <Separator />
 
               <form onSubmit={submit} className="space-y-6">
+                {errorList.length > 0 && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    {errorList.map((message, index) => (
+                      <p key={index}>{message}</p>
+                    ))}
+                  </div>
+                )}
+
                 {step === 1 && (
                   <div className="space-y-4">
                     <RadioGroup
@@ -395,144 +344,6 @@ export default function Register() {
 
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-11 flex-1">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                      </Button>
-                      <Button
-                        type="button"
-                        disabled={!canGoStep3}
-                        onClick={() => setStep(3)}
-                        className="h-11 flex-1 bg-[#1e3a5f] font-semibold shadow-md shadow-[#1e3a5f]/25 hover:bg-[#2c5282]"
-                      >
-                        Continue to learners
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {step === 3 && (
-                  <div className="space-y-5">
-                    <div className="space-y-4">
-                      {data.children.map((child, index) => (
-                        <div key={index} className="rounded-xl border border-slate-200 bg-white p-4">
-                          <div className="mb-4 flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-slate-900">Learner {index + 1}</p>
-                            {data.children.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeChild(index)}
-                                className="h-8 w-8 text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
-                              <Label>First name</Label>
-                              <Input
-                                value={child.first_name}
-                                className={inputClass}
-                                onChange={(e) => updateChild(index, { first_name: e.target.value })}
-                              />
-                            </div>
-                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
-                              <Label>Last name</Label>
-                              <Input
-                                value={child.last_name}
-                                className={inputClass}
-                                onChange={(e) => updateChild(index, { last_name: e.target.value })}
-                              />
-                            </div>
-                            <div className="col-span-2 space-y-1.5 sm:col-span-1">
-                              <Label>Middle name</Label>
-                              <Input
-                                value={child.middle_name}
-                                className={inputClass}
-                                onChange={(e) => updateChild(index, { middle_name: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>Suffix</Label>
-                              <Input
-                                value={child.suffix}
-                                className={inputClass}
-                                onChange={(e) => updateChild(index, { suffix: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>Birth date</Label>
-                              <Input
-                                type="date"
-                                value={child.birth_date}
-                                className={inputClass}
-                                onChange={(e) => updateChild(index, { birth_date: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label>Gender</Label>
-                              <Select
-                                value={child.gender || undefined}
-                                onValueChange={(value) => updateChild(index, { gender: value })}
-                              >
-                                <SelectTrigger className={selectTriggerClass}>
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Female">Female</SelectItem>
-                                  <SelectItem value="Male">Male</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="col-span-2 space-y-1.5">
-                              <Label>LRN</Label>
-                              <Input
-                                value={child.lrn}
-                                maxLength={12}
-                                className={inputClass}
-                                onChange={(e) => updateChild(index, { lrn: e.target.value })}
-                              />
-                            </div>
-                            <div className="col-span-2 flex items-center gap-2 rounded-lg bg-slate-50 p-3">
-                              <Checkbox
-                                checked={!!child.same_address_as_guardian}
-                                onCheckedChange={(checked) => applyGuardianAddress(index, checked === true)}
-                              />
-                              <Label className="text-sm font-normal text-slate-600">Same address as guardian</Label>
-                            </div>
-                            {['house_street_sitio', 'barangay', 'municipality_city', 'province'].map((field) => (
-                              <div key={field} className="col-span-2 space-y-1.5">
-                                <Label>{field.replaceAll('_', ' ')}</Label>
-                                <Input
-                                  value={child[field] ?? ''}
-                                  disabled={!!child.same_address_as_guardian}
-                                  className={cn(inputClass, child.same_address_as_guardian && 'bg-slate-50')}
-                                  onChange={(e) => updateChild(index, { [field]: e.target.value })}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <Button type="button" variant="outline" onClick={addChild} className="h-10 w-full">
-                      <Plus className="mr-2 h-4 w-4" /> Add another learner
-                    </Button>
-
-                    {errors.children && <p className="text-xs text-red-600">{errors.children}</p>}
-                    {errorList.length > 0 && (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                        {errorList.map((message, index) => (
-                          <p key={index}>{message}</p>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 flex-1">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back
                       </Button>
                       <Button

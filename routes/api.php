@@ -4,8 +4,8 @@ use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\BackupLogController;
 use App\Http\Controllers\Api\ClassScheduleController;
-use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\FacultyController;
 use App\Http\Controllers\Api\GradeController;
@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\KpiController;
 use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\NatResultController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ParentChatbotController;
 use App\Http\Controllers\Api\ParentController;
 use App\Http\Controllers\Api\ParentOnboardingController;
 use App\Http\Controllers\Api\ParentPortalController;
@@ -113,6 +114,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('grade-reviews', GradeReviewController::class);
 
     Route::middleware(['role:parent', 'parent.scope'])->group(function () {
+        Route::post('parent/chatbot', ParentChatbotController::class)->name('parent.chatbot');
         Route::post('parent/register-student', [ParentController::class, 'registerStudent'])->name('parent.register-student');
         Route::get('parent-portal', ParentPortalController::class)->name('parent-portal.index');
     });
@@ -159,11 +161,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::middleware(['role:admin'])->group(function () {
         Route::get('/dashboard/admin-summary', [DashboardController::class, 'adminSummary'])->name('dashboard.admin-summary');
-        Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
         Route::get('system-logs/auth', [SystemLogController::class, 'auth']);
         Route::get('system-logs/access', [SystemLogController::class, 'access']);
         Route::get('system-logs/errors', [SystemLogController::class, 'errors']);
         Route::post('backup-logs/run', [BackupLogController::class, 'run'])->name('backup-logs.run');
+        Route::get('backup-logs/{id}/download', [BackupLogController::class, 'download'])->name('backup-logs.download');
         Route::apiResource('backup-logs', BackupLogController::class)->only(['index', 'show', 'store']);
+    });
+
+    Route::middleware(['role:admin|school_admin'])->group(function () {
+        Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show']);
     });
 });

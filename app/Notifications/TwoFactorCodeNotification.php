@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Channels\SemaphoreSmsChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -16,7 +17,27 @@ class TwoFactorCodeNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        $channels = [];
+
+        if (! empty($notifiable->email)) {
+            $channels[] = 'mail';
+        }
+
+        if (! empty($notifiable->contact_number) || ! empty($notifiable->phone_number) || ! empty($notifiable->mobile)) {
+            $channels[] = SemaphoreSmsChannel::class;
+        }
+
+        return $channels;
+    }
+
+    public function toSms(object $notifiable): array
+    {
+        $to = $notifiable->contact_number ?? $notifiable->phone_number ?? $notifiable->mobile ?? null;
+
+        return [
+            'to' => $to,
+            'message' => "TALAIS verification code: {$this->code}. It expires in {$this->expiresInMinutes} minutes. Do not share this code.",
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

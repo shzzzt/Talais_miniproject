@@ -38,7 +38,10 @@ export default function Login({ status, canResetPassword }) {
             />
 
             <aside
-                className="relative z-[1] hidden min-h-0 min-w-0 flex-col self-stretch border-r border-white/10 bg-gradient-to-br from-[#142a45] via-[#1e3a5f] to-[#254a73] text-white shadow-2xl shadow-[#0f1f33]/40 lg:flex lg:h-full lg:flex-[4]"
+                className="relative z-[1] hidden min-h-0 min-w-0 flex-col self-stretch border-r border-white/10 bg-cover bg-center text-white shadow-2xl shadow-[#0f1f33]/40 lg:flex lg:h-full lg:flex-[4]"
+                style={{
+                    backgroundImage: `linear-gradient(135deg, rgba(20, 42, 69, 0.85) 0%, rgba(30, 58, 95, 0.82) 45%, rgba(37, 74, 115, 0.85) 100%), url('/images/login-bg.jpg')`
+                }}
                 aria-hidden
             >
                 <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-10 py-12 xl:px-14 2xl:px-20">

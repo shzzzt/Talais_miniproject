@@ -112,6 +112,26 @@ class BackupLogController extends Controller
         }
     }
 
+    /**
+     * Download a backup file
+     */
+    public function download(string $id)
+    {
+        $log = BackupLog::findOrFail($id);
+        
+        if (!$log->file_path) {
+            return response()->json(['error' => 'No backup file available'], 404);
+        }
+
+        $disk = Storage::disk(config('backup.backup.destination.disks')[0] ?? 'local');
+        
+        if (!$disk->exists($log->file_path)) {
+            return response()->json(['error' => 'Backup file not found'], 404);
+        }
+
+        return $disk->download($log->file_path);
+    }
+
     private function present(BackupLog $log): array
     {
         return [

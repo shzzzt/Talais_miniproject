@@ -10,6 +10,25 @@ import { toast } from "sonner";
 export default function BackupManagement() {
   const queryClient = useQueryClient();
 
+  const downloadBackup = async (logId, fileName) => {
+    try {
+      const response = await http.get(`/backup-logs/${logId}/download`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName || 'backup.zip');
+      document.body.appendChild(link);
+      link.click();
+      link.parentElement.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Backup downloaded successfully");
+    } catch (e) {
+      toast.error("Failed to download backup: " + (e?.response?.data?.error || e.message));
+    }
+  };
+
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["backup-logs"],
     queryFn: () => base44.entities.BackupLog.list(),
@@ -22,7 +41,13 @@ export default function BackupManagement() {
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["backup-logs"] });
-      if (res?.data?.status === "success") toast.success("Backup completed successfully");
+      if (res?.data?.status === "success") {
+        toast.success("Backup completed successfully! Starting download...");
+        // Auto-download the backup file
+        setTimeout(() => {
+          downloadBackup(res?.data?.id, res?.data?.file_path);
+        }, 500);
+      }
       else toast.error("Backup failed: " + (res?.error || res?.data?.notes || "unknown error"));
     },
     onError: (e) => toast.error(e?.response?.data?.error || e.message || "Backup failed"),
@@ -106,7 +131,7 @@ export default function BackupManagement() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b">
-                  <tr>{["Date & Time", "Type", "Triggered By", "Status", "Size", "File"].map(h => (
+                  <tr>{["Date & Time", "Type", "Triggered By", "Status", "Size", "File", "Action"].map(h => (
                     <th key={h} className="text-left text-xs px-4 py-3 text-slate-500 font-semibold">{h}</th>
                   ))}</tr>
                 </thead>
@@ -120,7 +145,21 @@ export default function BackupManagement() {
                         <Badge className={`text-xs ${log.status === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{log.status}</Badge>
                       </td>
                       <td className="px-4 py-2.5 text-xs">{log.file_size_mb !== null ? `${log.file_size_mb} MB` : '—'}</td>
-                      <td className="px-4 py-2.5 text-xs text-slate-500 max-w-[300px] truncate">{log.file_path || '—'}</td>
+                      <td className="px-4 py-2.5 text-xs text-slate-500 max-w-[200px] truncate">{log.file_path || '—'}</td>
+                      <td className="px-4 py-2.5">
+                        {log.status === "success" && log.file_path ? (
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => downloadBackup(log.id, log.file_path)}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

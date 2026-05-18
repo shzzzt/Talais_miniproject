@@ -31,18 +31,10 @@ class RegistrationTest extends TestCase
                 'last_name' => 'Guardian',
                 'relationship' => 'Mother',
             ],
-            'children' => [
-                [
-                    'first_name' => 'Test',
-                    'last_name' => 'Learner',
-                    'birth_date' => '2018-01-15',
-                    'gender' => 'Female',
-                ],
-            ],
         ]);
 
         $response->assertSessionHasNoErrors();
         $this->assertAuthenticated();
-        $response->assertRedirect(route('parent-portal.index', absolute: false));
+        $response->assertRedirect(route('parent-home.index', absolute: false));
     }
 }

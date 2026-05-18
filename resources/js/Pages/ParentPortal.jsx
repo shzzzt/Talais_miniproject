@@ -259,9 +259,7 @@ export default function ParentPortal() {
           <TabsTrigger value="grades">Grades</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="violations">Violations</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="transfer">Transfer Request</TabsTrigger>
-          <TabsTrigger value="chatbot">Chatbot</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">

@@ -1,16 +1,25 @@
 import AppLayout from '@/Layouts/AppLayout';
+import { usePage } from '@inertiajs/react';
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { http } from "@/lib/api";
-import { Loader2, Send, Bot, UserRound } from "lucide-react";
+import { chatHistoryKey, loadArchivedChatSessions, loadChatHistory, saveChatHistory } from "@/lib/chat-history";
+import { Loader2, Send, Bot, UserRound, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export default function ParentHome() {
-  const [chatMessages, setChatMessages] = useState([]);
+  const { props } = usePage();
+  const userId = props?.auth?.user?.id;
+  const storageKey = chatHistoryKey(userId, 'home');
+  const [chatMessages, setChatMessages] = useState(() => loadChatHistory(storageKey, []));
   const [chatInput, setChatInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [archivedSessions, setArchivedSessions] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
   const messagesEndRef = useRef(null);
 
   const { data: portal, isLoading } = useQuery({
@@ -22,6 +31,15 @@ export default function ParentHome() {
   });
 
   const children = portal?.children ?? [];
+  const selectedSession = archivedSessions.find((session) => session.id === selectedSessionId) ?? archivedSessions[0];
+
+  useEffect(() => {
+    saveChatHistory(storageKey, chatMessages);
+  }, [chatMessages, storageKey]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, isSending]);
 
   useEffect(() => {
     // Prevent scrolling on the page
@@ -73,21 +91,34 @@ export default function ParentHome() {
     setIsSending(true);
     setChatInput("");
 
-    // Add user message
+    const history = chatMessages.slice(-8);
+
     setChatMessages((messages) => [
       ...messages,
       { role: "user", text },
     ]);
 
-    // Simulate a small delay for better UX
-    setTimeout(() => {
+    try {
+      const { data } = await http.post('/parent/chatbot', {
+        message: text,
+        history,
+      });
+      const response = data?.data?.answer ?? data?.answer ?? answerParentQuestion(text);
+
+      setChatMessages((messages) => [
+        ...messages,
+        { role: "assistant", text: response },
+      ]);
+    } catch (error) {
       const response = answerParentQuestion(text);
       setChatMessages((messages) => [
         ...messages,
         { role: "assistant", text: response },
       ]);
+      toast.error(error?.response?.data?.message ?? 'Assistant is using offline help for now.');
+    } finally {
       setIsSending(false);
-    }, 500);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -97,15 +128,34 @@ export default function ParentHome() {
     }
   };
 
+  const openHistory = () => {
+    const sessions = loadArchivedChatSessions(userId, 'home');
+    setArchivedSessions(sessions);
+    setSelectedSessionId(sessions[0]?.id ?? null);
+    setHistoryOpen(true);
+  };
+
+  const continueArchivedSession = (session) => {
+    if (!session?.messages?.length) return;
+
+    setChatMessages(session.messages);
+    setHistoryOpen(false);
+    toast.success('Conversation loaded');
+  };
+
   return (
     <AppLayout>
-      <div className="flex flex-col w-full h-[calc(100vh-64px)] bg-white">
+      <div className="flex flex-col w-full h-[calc(100vh-119px)] bg-white">
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto min-h-0 w-full">
-          <div className="flex flex-col items-center justify-start w-full px-4 py-8">
+          <div
+            className={`flex min-h-full flex-col items-center w-full px-4 py-8 ${
+              chatMessages.length === 0 ? 'justify-center' : 'justify-end'
+            }`}
+          >
             <div className="w-full max-w-3xl">
               {chatMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-screen text-center">
+                <div className="flex flex-col items-center justify-center text-center">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center mb-6">
                     <Bot className="w-8 h-8 text-white" />
                   </div>
@@ -174,11 +224,67 @@ export default function ParentHome() {
               <Send className="w-5 h-5" />
             </Button>
           </div>
-          <p className="text-xs text-slate-500 text-center mt-3">
-            Portal Assistant • Press Enter to send
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-3 text-xs text-slate-500">
+            <span>Portal Assistant • Press Enter to send</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={openHistory}
+              className="h-7 px-2 text-xs text-slate-500"
+            >
+              <History className="w-3.5 h-3.5 mr-1" />
+              History
+            </Button>
+          </div>
         </div>
       </div>
+
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Conversation history</DialogTitle>
+          </DialogHeader>
+
+          {archivedSessions.length === 0 ? (
+            <div className="py-10 text-center text-sm text-slate-500">
+              Previous conversations will appear here after you log out.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-[260px_1fr]">
+              <div className="max-h-[420px] overflow-y-auto border rounded-md">
+                {archivedSessions.map((session) => (
+                  <button
+                    key={session.id}
+                    type="button"
+                    onClick={() => continueArchivedSession(session)}
+                    className="w-full text-left px-3 py-3 border-b last:border-b-0 hover:bg-blue-50"
+                  >
+                    <p className="text-sm font-semibold text-slate-800 line-clamp-1">{session.title}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {new Date(session.createdAt).toLocaleString()}
+                    </p>
+                  </button>
+                ))}
+              </div>
+
+              <div className="max-h-[420px] overflow-y-auto rounded-md border bg-white p-4 space-y-3">
+                {(selectedSession?.messages ?? []).map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                      msg.role === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 text-slate-800'
+                    }`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

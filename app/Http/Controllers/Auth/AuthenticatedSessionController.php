@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 use Spatie\Permission\Models\Role;
 
 class AuthenticatedSessionController extends Controller
@@ -46,7 +47,15 @@ class AuthenticatedSessionController extends Controller
             $request->session()->put('2fa.user_id', $user->id);
             $request->session()->put('2fa.remember', $request->boolean('remember'));
 
-            $this->twoFactor->dispatch($user);
+            try {
+                $this->twoFactor->dispatch($user);
+            } catch (RuntimeException $exception) {
+                $request->session()->forget(['2fa.user_id', '2fa.remember']);
+
+                return redirect()->route('login')->withErrors([
+                    'email' => $exception->getMessage(),
+                ]);
+            }
 
             return redirect()->route('two-factor.show');
         }
@@ -71,7 +80,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $homeRoute = $user instanceof User && $user->hasParentRole()
+            ? route('parent-home.index', absolute: false)
+            : route('dashboard', absolute: false);
+
+        return redirect()->intended($homeRoute);
     }
 
     public function destroy(Request $request): RedirectResponse

@@ -93,9 +93,9 @@ export default function EditProfile({ mustVerifyEmail, status }) {
     }, {
       preserveScroll: true,
       onSuccess: () => toast.success(enabled ? 'Two-factor verification enabled' : 'Two-factor verification disabled'),
-      onError: () => {
+      onError: (formErrors) => {
         setData('two_factor_enabled', !enabled);
-        toast.error('Failed to update two-factor verification.');
+        toast.error(formErrors.two_factor_enabled || 'Failed to update two-factor verification.');
       },
     });
   };
@@ -189,8 +189,9 @@ export default function EditProfile({ mustVerifyEmail, status }) {
         <CardContent>
           <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
             <div>
-              <p className="text-sm font-medium text-slate-800">Email OTP on sign in</p>
-              <p className="text-xs text-slate-500">When enabled, this account must verify a one-time code after entering the password.</p>
+              <p className="text-sm font-medium text-slate-800">OTP on sign in</p>
+              <p className="text-xs text-slate-500">When enabled, this account must verify a one-time code sent by email or SMS after entering the password.</p>
+              {errors.two_factor_enabled && <p className="text-xs text-red-600 mt-1">{errors.two_factor_enabled}</p>}
             </div>
             <Switch checked={data.two_factor_enabled} onCheckedChange={toggleTwoFactor} />
           </div>

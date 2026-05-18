@@ -2,13 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
-use App\Models\Student;
 use App\Models\User;
 use App\Support\PhoneNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\Validation\Validator;
 
 class RegisteredParentRequest extends FormRequest
 {
@@ -24,25 +22,6 @@ class RegisteredParentRequest extends FormRequest
             'email' => is_string($email) && trim($email) !== '' ? strtolower(trim($email)) : null,
             'phone_number' => PhoneNumber::normalize($this->input('phone_number')),
         ]);
-    }
-
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $v) {
-            $children = collect($this->input('children', []));
-
-            $lrns = $children->pluck('lrn')->filter(fn ($lrn) => filled($lrn))->values();
-            if ($lrns->count() !== $lrns->unique()->count()) {
-                $v->errors()->add('children', __('Each learner must have a distinct LRN if an LRN is provided.'));
-            }
-
-            foreach ($lrns->unique()->all() as $lrn) {
-                if (Student::withTrashed()->where('lrn', $lrn)->exists()) {
-                    $v->errors()->add('children', __('An LRN in this registration already exists in the system.'));
-                    break;
-                }
-            }
-        });
     }
 
     public function rules(): array
@@ -70,8 +49,7 @@ class RegisteredParentRequest extends FormRequest
                 Password::min(10)
                     ->mixedCase()
                     ->numbers()
-                    ->symbols()
-                    ->when(! app()->environment('testing'), fn (Password $rule) => $rule->uncompromised()),
+                    ->symbols(),
             ],
             'guardian.first_name' => ['required', 'string', 'max:80'],
             'guardian.middle_name' => ['nullable', 'string', 'max:80'],
@@ -86,22 +64,6 @@ class RegisteredParentRequest extends FormRequest
             'guardian.barangay' => ['nullable', 'string', 'max:80'],
             'guardian.municipality_city' => ['nullable', 'string', 'max:80'],
             'guardian.province' => ['nullable', 'string', 'max:80'],
-            'children' => ['required', 'array', 'min:1', 'max:20'],
-            'children.*.first_name' => ['required', 'string', 'max:80'],
-            'children.*.middle_name' => ['nullable', 'string', 'max:80'],
-            'children.*.last_name' => ['required', 'string', 'max:80'],
-            'children.*.suffix' => ['nullable', 'string', 'max:10'],
-            'children.*.birth_date' => ['required', 'date'],
-            'children.*.gender' => ['required', Rule::in(['Male', 'Female'])],
-            'children.*.lrn' => ['nullable', 'string', 'size:12'],
-            'children.*.birth_place' => ['nullable', 'string', 'max:150'],
-            'children.*.mother_tongue' => ['nullable', 'string', 'max:80'],
-            'children.*.ip_ethnic_group' => ['nullable', 'string', 'max:80'],
-            'children.*.religion' => ['nullable', 'string', 'max:80'],
-            'children.*.house_street_sitio' => ['nullable', 'string', 'max:150'],
-            'children.*.barangay' => ['nullable', 'string', 'max:80'],
-            'children.*.municipality_city' => ['nullable', 'string', 'max:80'],
-            'children.*.province' => ['nullable', 'string', 'max:80'],
         ];
     }
 }

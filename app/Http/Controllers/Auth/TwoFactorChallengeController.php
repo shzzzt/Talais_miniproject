@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 
 class TwoFactorChallengeController extends Controller
 {
@@ -34,7 +35,7 @@ class TwoFactorChallengeController extends Controller
             return null;
         }
 
-        return $user->email ?? $user->phone_number;
+        return $user->email ?? $user->phone_number ?? null;
     }
 
     public function resend(Request $request): RedirectResponse
@@ -49,9 +50,15 @@ class TwoFactorChallengeController extends Controller
             return redirect()->route('login');
         }
 
-        $this->twoFactor->dispatch($user);
+        try {
+            $this->twoFactor->dispatch($user);
+        } catch (RuntimeException $exception) {
+            return back()->withErrors([
+                'code' => $exception->getMessage(),
+            ]);
+        }
 
-        return back()->with('status', 'A new verification code has been emailed.');
+        return back()->with('status', 'A new verification code has been sent.');
     }
 
     public function verify(Request $request): RedirectResponse
@@ -88,7 +95,11 @@ class TwoFactorChallengeController extends Controller
         $request->session()->forget('2fa.user_id');
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $homeRoute = $user->hasParentRole()
+            ? route('parent-home.index', absolute: false)
+            : route('dashboard', absolute: false);
+
+        return redirect()->intended($homeRoute);
     }
 
     public function cancel(Request $request): RedirectResponse

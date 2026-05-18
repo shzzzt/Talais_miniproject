@@ -13,6 +13,8 @@ class AuditLogController extends Controller
     {
         $query = Activity::query()
             ->with('causer:id,name,email,role')
+            ->where('log_name', '!=', 'access')
+            ->when($request->filled('log_name'), fn ($q) => $q->where('log_name', $request->string('log_name')))
             ->when($request->filled('event'), fn ($q) => $q->where('event', $request->string('event')))
             ->when($request->filled('subject_type'), fn ($q) => $q->where('subject_type', $request->string('subject_type')))
             ->when($request->filled('causer_id'), fn ($q) => $q->where('causer_id', $request->integer('causer_id')))

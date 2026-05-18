@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { router, usePage } from '@inertiajs/react';
+import { archiveActiveChatSession } from '@/lib/chat-history';
 
 /**
  * Inertia-backed auth context that preserves the old `useAuth()` API
@@ -16,6 +17,10 @@ export function AuthProvider({ children }) {
 
     const value = useMemo(() => {
         const logout = (shouldRedirect = true) => {
+            if (user?.role === 'parent') {
+                archiveActiveChatSession(user.id, 'home');
+            }
+
             router.post(
                 '/logout',
                 {},

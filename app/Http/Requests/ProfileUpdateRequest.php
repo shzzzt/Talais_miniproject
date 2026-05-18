@@ -7,6 +7,7 @@ use App\Support\PhoneNumber;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class ProfileUpdateRequest extends FormRequest
 {
@@ -73,6 +74,27 @@ class ProfileUpdateRequest extends FormRequest
                 'phone_number' => PhoneNumber::normalize($this->input('phone_number')),
             ]);
         }
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if (! $this->boolean('two_factor_enabled')) {
+                    return;
+                }
+
+                $email = $this->input('email', $this->user()?->email);
+                $phone = $this->input('phone_number', $this->user()?->phone_number);
+
+                if (blank($email) && blank($phone)) {
+                    $validator->errors()->add(
+                        'two_factor_enabled',
+                        'Two-factor verification requires an email address or phone number.',
+                    );
+                }
+            },
+        ];
     }
 
     /**
